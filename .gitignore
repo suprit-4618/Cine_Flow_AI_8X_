@@ -23,4 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
+# Video sample binaries (Mixkit Stock Video Free License restricts redistributing standalone raw video files in public repos)
+# WebP poster frames and SVG vector fallbacks are committed directly.
+/public/samples/*.mp4
+
 # NOTE: Do NOT add .agent-logs/ here as per assignment requirements
