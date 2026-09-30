@@ -2,7 +2,7 @@
 
 export type AspectRatio = '16:9' | '9:16' | '1:1';
 
-export type CameraMotion = 'static' | 'pan_right' | 'tilt_up' | 'orbit_cw' | 'dolly_in' | 'handheld';
+export type CameraMotion = 'static' | 'pan_right' | 'tilt_up' | 'orbit_cw' | 'dolly_in' | 'zoom_in' | 'handheld';
 
 export type GenreCategory = 
   | 'neon_city' 
@@ -57,6 +57,7 @@ export interface SingleGeneration {
   aspectRatio: AspectRatio;
   cameraMotion: CameraMotion;
   durationSec: number;
+  mediaType?: 'video' | 'image';
   status: GenerationStatus;
   progress: number; // 0 to 100
   stageText: StageText;

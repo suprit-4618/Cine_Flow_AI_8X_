@@ -46,6 +46,64 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Camera motion animations for 2D previews and poster dynamics */
+  .animate-camera-pan {
+    animation: camera-pan-right 6s ease-in-out infinite;
+  }
+  .animate-camera-tilt {
+    animation: camera-tilt-up 6s ease-in-out infinite;
+  }
+  .animate-camera-orbit {
+    animation: camera-orbit-cw 7s ease-in-out infinite;
+  }
+  .animate-camera-dolly {
+    animation: camera-dolly-in 5s ease-in-out infinite;
+  }
+  .animate-camera-zoom {
+    animation: camera-zoom-in 5s ease-in-out infinite;
+  }
+  .animate-camera-handheld {
+    animation: camera-handheld 4s ease-in-out infinite;
+  }
+}
+
+@keyframes camera-pan-right {
+  0% { transform: scale(1.08) translateX(-4%); }
+  50% { transform: scale(1.08) translateX(4%); }
+  100% { transform: scale(1.08) translateX(-4%); }
+}
+
+@keyframes camera-tilt-up {
+  0% { transform: scale(1.08) translateY(4%); }
+  50% { transform: scale(1.08) translateY(-4%); }
+  100% { transform: scale(1.08) translateY(4%); }
+}
+
+@keyframes camera-orbit-cw {
+  0% { transform: scale(1.08) rotate(0deg); }
+  50% { transform: scale(1.08) rotate(2.5deg) translateX(3px); }
+  100% { transform: scale(1.08) rotate(0deg); }
+}
+
+@keyframes camera-dolly-in {
+  0% { transform: scale(1.0); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1.0); }
+}
+
+@keyframes camera-zoom-in {
+  0% { transform: scale(1.0); }
+  50% { transform: scale(1.18); }
+  100% { transform: scale(1.0); }
+}
+
+@keyframes camera-handheld {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(2px, -2px) rotate(0.6deg); }
+  50% { transform: translate(-1.5px, 1.5px) rotate(-0.4deg); }
+  75% { transform: translate(1px, 2px) rotate(0.4deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
 }
 
 /* Reduced motion preference */
@@ -57,5 +115,6 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+    transform: none !important;
   }
 }

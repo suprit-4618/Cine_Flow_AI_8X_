@@ -98,11 +98,61 @@ export const ASPECT_RATIOS: { value: AspectRatio; label: string; ratioClass: str
   { value: '1:1', label: '1:1 Square', ratioClass: 'aspect-square', desc: 'Balanced Frame' },
 ];
 
-export const CAMERA_MOTIONS: { value: CameraMotion; label: string; iconName: string; animationClass: string; desc: string }[] = [
-  { value: 'static', label: 'Static Lock', iconName: 'Camera', animationClass: '', desc: 'Fixed tripod composition' },
-  { value: 'pan_right', label: 'Pan Right', iconName: 'ArrowRight', animationClass: 'animate-pan-right', desc: 'Smooth horizontal sweep' },
-  { value: 'tilt_up', label: 'Tilt Up', iconName: 'ArrowUp', animationClass: 'animate-tilt-up', desc: 'Vertical upward crane motion' },
-  { value: 'orbit_cw', label: 'Orbit CW', iconName: 'RotateCw', animationClass: 'animate-orbit-cw', desc: 'Arcing orbital perspective' },
-  { value: 'dolly_in', label: 'Dolly In', iconName: 'Maximize2', animationClass: 'animate-dolly-in', desc: 'Push forward into subject' },
-  { value: 'handheld', label: 'Handheld', iconName: 'Activity', animationClass: 'animate-handheld', desc: 'Subtle documentary shake' },
+export const CAMERA_MOTIONS: { value: CameraMotion; label: string; iconName: string; animationClass: string; desc: string; transformStyle: string }[] = [
+  { 
+    value: 'static', 
+    label: 'Static Lock', 
+    iconName: 'Camera', 
+    animationClass: '', 
+    desc: 'Fixed tripod composition with zero motion',
+    transformStyle: 'none'
+  },
+  { 
+    value: 'pan_right', 
+    label: 'Pan Right', 
+    iconName: 'ArrowRight', 
+    animationClass: 'animate-pan-right', 
+    desc: 'Smooth lateral horizontal camera track',
+    transformStyle: 'translateX(8px)'
+  },
+  { 
+    value: 'tilt_up', 
+    label: 'Tilt Up', 
+    iconName: 'ArrowUp', 
+    animationClass: 'animate-tilt-up', 
+    desc: 'Vertical upward crane / tilt perspective',
+    transformStyle: 'translateY(-8px)'
+  },
+  { 
+    value: 'orbit_cw', 
+    label: 'Orbit CW', 
+    iconName: 'RotateCw', 
+    animationClass: 'animate-orbit-cw', 
+    desc: 'Arcing orbital circular movement around subject',
+    transformStyle: 'rotate(4deg) scale(1.04)'
+  },
+  { 
+    value: 'dolly_in', 
+    label: 'Dolly In', 
+    iconName: 'Maximize2', 
+    animationClass: 'animate-dolly-in', 
+    desc: 'Physical forward push into the scene focus',
+    transformStyle: 'scale(1.08)'
+  },
+  { 
+    value: 'zoom_in', 
+    label: 'Zoom In', 
+    iconName: 'ZoomIn', 
+    animationClass: 'animate-zoom-in', 
+    desc: 'Optical telephoto magnification sweep',
+    transformStyle: 'scale(1.12)'
+  },
+  { 
+    value: 'handheld', 
+    label: 'Handheld', 
+    iconName: 'Activity', 
+    animationClass: 'animate-handheld', 
+    desc: 'Subtle organic documentary micro-shake',
+    transformStyle: 'translate(2px, -2px) rotate(0.8deg)'
+  },
 ];
