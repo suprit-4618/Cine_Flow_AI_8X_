@@ -72,9 +72,13 @@ export interface StoryboardShot {
   shotType: 'Wide Establishing' | 'Medium Subject' | 'Close-Up Detail';
   prompt: string;
   cameraMotion: CameraMotion;
+  durationSec: number;
   status: GenerationStatus;
   progress: number;
+  stageText?: StageText;
   resultAssetId?: string;
+  locked?: boolean;
+  errorMessage?: string;
 }
 
 export interface Storyboard {
@@ -82,6 +86,7 @@ export interface Storyboard {
   title: string;
   masterIdea: string;
   genre: GenreCategory;
+  stylePresetId: string;
   aspectRatio: AspectRatio;
   shots: StoryboardShot[];
   status: GenerationStatus;
