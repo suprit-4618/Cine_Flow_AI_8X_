@@ -192,29 +192,36 @@ def process_transcript(conversation_id=None, transcript_path=None, workspace_dir
         f.write("\n".join(md_lines).rstrip() + "\n")
 
 def main():
-    raw_input = ""
-    if not sys.stdin.isatty():
-        try:
-            raw_input = sys.stdin.read()
-        except Exception:
-            raw_input = ""
+    conversation_id = None
+    transcript_path = None
+    workspace_dir = None
+    model_name = None
 
-    payload = {}
-    if raw_input and raw_input.strip():
-        try:
-            payload = json.loads(raw_input)
-        except Exception:
-            pass
-
-    conversation_id = payload.get("conversationId")
-    transcript_path = payload.get("transcriptPath")
-    workspace_paths = payload.get("workspacePaths", [])
-    workspace_dir = workspace_paths[0] if workspace_paths else None
-    model_name = payload.get("modelName")
-
-    # If conversation_id not passed via stdin, check if passed via args
-    if not conversation_id and len(sys.argv) > 1:
+    if len(sys.argv) > 1:
         conversation_id = sys.argv[1]
+    else:
+        raw_input = ""
+        if not sys.stdin.isatty():
+            try:
+                # In environments where stdin is piped with data
+                import msvcrt
+                # If there's input or standard hook invocation
+                raw_input = sys.stdin.read()
+            except Exception:
+                raw_input = ""
+
+        payload = {}
+        if raw_input and raw_input.strip():
+            try:
+                payload = json.loads(raw_input)
+            except Exception:
+                pass
+
+        conversation_id = payload.get("conversationId")
+        transcript_path = payload.get("transcriptPath")
+        workspace_paths = payload.get("workspacePaths", [])
+        workspace_dir = workspace_paths[0] if workspace_paths else None
+        model_name = payload.get("modelName")
 
     # Process transcript
     try:

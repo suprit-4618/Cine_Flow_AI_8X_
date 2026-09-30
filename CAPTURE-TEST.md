@@ -9,8 +9,9 @@
 - **Config File:** [`.agents/hooks.json`](file:///d:/hackathon/cine_flow_ai/.agents/hooks.json)
 - **Capture Script:** [`.agents/scripts/capture_hook.py`](file:///d:/hackathon/cine_flow_ai/.agents/scripts/capture_hook.py)
 
-## 3. Log File Location
+## 3. Log File Locations
 - **Session 1 Log File:** [`.agent-logs/2026-09-30_11-47-41_06692c6c-0dd3-4bbd-9af9-6b764a516b25.md`](file:///d:/hackathon/cine_flow_ai/.agent-logs/2026-09-30_11-47-41_06692c6c-0dd3-4bbd-9af9-6b764a516b25.md)
+- **Session 2 Log File:** [`.agent-logs/2026-09-30_11-54-21_3624d503-b3d7-427c-8a63-d3d82fd53d72.md`](file:///d:/hackathon/cine_flow_ai/.agent-logs/2026-09-30_11-54-21_3624d503-b3d7-427c-8a63-d3d82fd53d72.md)
 
 ## 4. Canary Entries (Raw)
 
@@ -28,6 +29,22 @@ timestamp: 2026-09-30T11:52:50Z
 model: gemini-3.7-flash-high
 
 Canary 1 captured successfully in session `06692c6c`. Automatic capture hook verified.
+```
+
+### Canary 2 (Session `3624d503`)
+```markdown
+[LOG_ENTRY type=PROMPT num=1 session=3624d503]
+timestamp: 2026-09-30T11:54:21Z
+model: gemini-3.7-flash-high
+
+CAPTURE TEST — 8x assignment, Suprit
+
+
+[LOG_ENTRY type=RESPONSE num=1 session=3624d503]
+timestamp: 2026-09-30T11:54:55Z
+model: gemini-3.7-flash-high
+
+Canary 2 captured successfully in session `3624d503`. Automatic capture hook verified across independent sessions.
 ```
 
 ## 5. Troubleshooting & Iterations
