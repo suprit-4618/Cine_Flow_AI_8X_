@@ -30,21 +30,46 @@ CineFlow AI operates entirely client-side for rapid prototyping, zero cloud bill
 
 ---
 
-## 📦 Getting Started
+## 📦 Getting Started Locally
 
 ```bash
-# Install dependencies
+# 1. Clone repository
+git clone <repository-url>
+cd cine_flow_ai
+
+# 2. Install dependencies
 npm install
 
-# Run development server
+# 3. Fetch and optimize video sample clips (Downloads 12 MP4 clips into /public/samples/)
+python process_assets.py
+
+# 4. Start development server
 npm run dev
 
-# Build production bundle
+# 5. Build production bundle
 npm run build
+```
+
+> **Note on Assets:** The repository includes committed lightweight WebP posters (`/public/samples/*.webp`) and dynamic vector SVG fallbacks so the app renders immediately even before downloading the `.mp4` video clips.
+
+---
+
+## 🌐 Deploying to Vercel
+
+CineFlow AI includes an empty `.vercelignore` file so that a direct CLI deployment includes all local MP4 media files in `/public/samples/`.
+
+To deploy directly to Vercel:
+
+```bash
+# 1. Ensure you are in the project root directory
+cd d:/hackathon/cine_flow_ai
+
+# 2. Deploy directly to production via Vercel CLI
+vercel --prod
 ```
 
 ---
 
 ## 📜 Asset Attribution & License
 
-All visual media assets utilized in this prototype are royalty-free public stock media licensed under Mixkit and Pexels free licenses. Complete attribution URLs and license specifications are documented in [`CREDITS.md`](./CREDITS.md).
+All visual media assets utilized in this prototype are royalty-free public stock media licensed under Mixkit free licenses. Complete attribution URLs and license specifications are documented in [`CREDITS.md`](./CREDITS.md).

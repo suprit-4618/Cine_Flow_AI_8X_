@@ -9,32 +9,32 @@ CineFlow AI strictly adheres to open-source and free-license attribution rules. 
 All 12 video clips are sourced from Mixkit and verified for sequence coherence across 4 genres in 3-shot sequences (Wide Establishing, Medium Subject, Close-Up Detail).
 
 ### Genre 1: Neon City / Urban Noir
-| Shot Type | Filename | WebP Poster | Mixkit Source URL | License |
-| :--- | :--- | :--- | :--- | :--- |
-| **Wide** | `neon-wide.mp4` | `neon-wide.webp` | [Mixkit: Futuristic City With Flying Cars](https://mixkit.co/free-stock-video/futuristic-city-with-flying-cars-at-night-42861/) | Mixkit Stock Video Free License |
-| **Medium** | `neon-medium.mp4` | `neon-medium.webp` | [Mixkit: Man Walking In A Neon Lit Hallway](https://mixkit.co/free-stock-video/man-walking-in-a-neon-lit-hallway-42864/) | Mixkit Stock Video Free License |
-| **Close-Up** | `neon-closeup.mp4` | `neon-closeup.webp` | [Mixkit: Hands Working On Computer At Night](https://mixkit.co/free-stock-video/hands-of-a-man-working-on-a-computer-at-night-42866/) | Mixkit Stock Video Free License |
+| Shot Type | Filename | WebP Poster | Confirmed Mixkit Source Page & Real Title | License | Size | Duration |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Wide** | `neon-wide.mp4` | `neon-wide.webp` | [Tour high above a city at dusk](https://mixkit.co/free-stock-video/tour-high-above-a-city-at-dusk-41375/) | Mixkit Stock Video Free License | 0.42 MB | 8.01s |
+| **Medium** | `neon-medium.mp4` | `neon-medium.webp` | [Walking a big city walker at night](https://mixkit.co/free-stock-video/walking-a-big-city-walker-at-night-40640/) | Mixkit Stock Video Free License | 0.55 MB | 8.01s |
+| **Close-Up** | `neon-closeup.mp4` | `neon-closeup.webp` | [Full moon with a soft haze](https://mixkit.co/free-stock-video/full-moon-with-a-soft-haze-4433/) | Mixkit Stock Video Free License | 0.24 MB | 8.00s |
 
 ### Genre 2: Alpine Nature / Wilderness
-| Shot Type | Filename | WebP Poster | Mixkit Source URL | License |
-| :--- | :--- | :--- | :--- | :--- |
-| **Wide** | `alpine-wide.mp4` | `alpine-wide.webp` | [Mixkit: Aerial View Of Snow-Covered Mountains](https://mixkit.co/free-stock-video/aerial-view-of-snow-covered-mountains-42901/) | Mixkit Stock Video Free License |
-| **Medium** | `alpine-medium.mp4` | `alpine-medium.webp` | [Mixkit: Trees In A Snowy Forest](https://mixkit.co/free-stock-video/trees-in-a-snowy-forest-42898/) | Mixkit Stock Video Free License |
-| **Close-Up** | `alpine-closeup.mp4` | `alpine-closeup.webp` | [Mixkit: Drops Of Water On A Leaf](https://mixkit.co/free-stock-video/drops-of-water-on-a-leaf-in-slow-motion-42912/) | Mixkit Stock Video Free License |
+| Shot Type | Filename | WebP Poster | Confirmed Mixkit Source Page & Real Title | License | Size | Duration |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Wide** | `alpine-wide.mp4` | `alpine-wide.webp` | [Sunset over a snowy winter mountain](https://mixkit.co/free-stock-video/sunset-over-a-snowy-winter-mountain-28844/) | Mixkit Stock Video Free License | 0.99 MB | 8.01s |
+| **Medium** | `alpine-medium.mp4` | `alpine-medium.webp` | [Snow falling in a pine forest](https://mixkit.co/free-stock-video/snow-falling-in-a-pine-forest-3352/) | Mixkit Stock Video Free License | 1.11 MB | 8.00s |
+| **Close-Up** | `alpine-closeup.mp4` | `alpine-closeup.webp` | [Fog on the heights of the snowy mountains](https://mixkit.co/free-stock-video/fog-on-the-heights-of-the-snowy-mountains-4396/) | Mixkit Stock Video Free License | 1.25 MB | 8.00s |
 
 ### Genre 3: Deep Space / Desert Odyssey
-| Shot Type | Filename | WebP Poster | Mixkit Source URL | License |
-| :--- | :--- | :--- | :--- | :--- |
-| **Wide** | `space-wide.mp4` | `space-wide.webp` | [Mixkit: View Of Planet Earth From Space](https://mixkit.co/free-stock-video/view-of-planet-earth-from-space-42888/) | Mixkit Stock Video Free License |
-| **Medium** | `space-medium.mp4` | `space-medium.webp` | [Mixkit: Silhouette Of Person Looking At Sky](https://mixkit.co/free-stock-video/silhouette-of-a-person-looking-at-the-sky-42882/) | Mixkit Stock Video Free License |
-| **Close-Up** | `space-closeup.mp4` | `space-closeup.webp` | [Mixkit: Flashing Laser Beams In The Dark](https://mixkit.co/free-stock-video/flashing-laser-beams-in-the-dark-42878/) | Mixkit Stock Video Free License |
+| Shot Type | Filename | WebP Poster | Confirmed Mixkit Source Page & Real Title | License | Size | Duration |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Wide** | `space-wide.mp4` | `space-wide.webp` | [Video of the Earth slowly spinning on it's axis](https://mixkit.co/free-stock-video/video-of-the-earth-slowly-spinning-on-its-axis-29351/) | Mixkit Stock Video Free License | 0.44 MB | 8.00s |
+| **Medium** | `space-medium.mp4` | `space-medium.webp` | [Starry night in the desert](https://mixkit.co/free-stock-video/starry-night-in-the-desert-46119/) | Mixkit Stock Video Free License | 0.95 MB | 8.00s |
+| **Close-Up** | `space-closeup.mp4` | `space-closeup.webp` | [Worm hole seen inside](https://mixkit.co/free-stock-video/worm-hole-seen-inside-18791/) | Mixkit Stock Video Free License | 1.61 MB | 8.00s |
 
 ### Genre 4: Macro Prism / Abstract
-| Shot Type | Filename | WebP Poster | Mixkit Source URL | License |
-| :--- | :--- | :--- | :--- | :--- |
-| **Wide** | `macro-wide.mp4` | `macro-wide.webp` | [Mixkit: Colorful Ink Swirls In Water](https://mixkit.co/free-stock-video/colorful-ink-swirls-in-water-42930/) | Mixkit Stock Video Free License |
-| **Medium** | `macro-medium.mp4` | `macro-medium.webp` | [Mixkit: Light Streaks Moving In Slow Motion](https://mixkit.co/free-stock-video/light-streaks-moving-in-slow-motion-42934/) | Mixkit Stock Video Free License |
-| **Close-Up** | `macro-closeup.mp4` | `macro-closeup.webp` | [Mixkit: Glowing Lines In Kaleidoscope Style](https://mixkit.co/free-stock-video/glowing-lines-in-kaleidoscope-style-42938/) | Mixkit Stock Video Free License |
+| Shot Type | Filename | WebP Poster | Confirmed Mixkit Source Page & Real Title | License | Size | Duration |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Wide** | `macro-wide.mp4` | `macro-wide.webp` | [Overhead view of a rocky coast and waves crashing](https://mixkit.co/free-stock-video/overhead-view-of-a-rocky-coast-and-waves-crashing-51502/) | Mixkit Stock Video Free License | 1.92 MB | 8.01s |
+| **Medium** | `macro-medium.mp4` | `macro-medium.webp` | [Stars in space background](https://mixkit.co/free-stock-video/stars-in-space-background-1610/) | Mixkit Stock Video Free License | 1.33 MB | 8.00s |
+| **Close-Up** | `macro-closeup.mp4` | `macro-closeup.webp` | [Vertical video of blazing flames over a black backdrop](https://mixkit.co/free-stock-video/vertical-video-of-blazing-flames-over-a-black-backdrop-52284/) | Mixkit Stock Video Free License | 1.39 MB | 8.00s |
 
 ---
 
@@ -49,7 +49,7 @@ All 12 video clips are sourced from Mixkit and verified for sequence coherence a
   > *"What is not permitted: Resell or redistribute the item(s) as standalone stock files, or include the item(s) in a media library, application, or template for download as raw stock footage."*
   
   **Git Repository Compliance:**
-  To comply strictly with the prohibition against redistributing raw standalone stock video binaries, `.mp4` video files are excluded via `.gitignore` while poster frames (`*.webp`) and SVG vector graphics are bundled in the repository. A automated python download/compression script is provided in `process_assets.py` for local development.
+  To comply strictly with the prohibition against redistributing raw standalone stock video binaries, `.mp4` video files are excluded via `.gitignore` while poster frames (`*.webp`) and SVG vector graphics are bundled in the repository. An automated Python download/compression script is provided in `process_assets.py` for local development and CLI deployment.
 
 ---
 
