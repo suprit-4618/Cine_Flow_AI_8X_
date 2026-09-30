@@ -9,9 +9,10 @@ import {
   Camera, 
   CheckCircle2, 
   AlertCircle,
+  Clock,
   ExternalLink
 } from 'lucide-react';
-import { StoryboardShot, CameraMotion, AspectRatio } from '../../types';
+import { StoryboardShot, CameraMotion, AspectRatio, GenreCategory } from '../../types';
 import { getAssetForShot } from '../../utils/storyboardHelper';
 
 interface ShotCardProps {
@@ -19,9 +20,11 @@ interface ShotCardProps {
   index: number;
   totalShots: number;
   aspectRatio: AspectRatio;
+  expectedGenre: GenreCategory;
   onUpdatePrompt: (shotId: string, newPrompt: string) => void;
   onToggleLock: (shotId: string) => void;
   onChangeCamera: (shotId: string, motion: CameraMotion) => void;
+  onChangeDuration: (shotId: string, durationSec: number) => void;
   onRegenerateShot: (shotId: string) => void;
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
@@ -37,14 +40,18 @@ const CAMERA_OPTIONS: { id: CameraMotion; label: string }[] = [
   { id: 'handheld', label: 'Handheld' },
 ];
 
+const DURATION_OPTIONS = [3, 5, 8];
+
 export const ShotCard: React.FC<ShotCardProps> = ({
   shot,
   index,
   totalShots,
   aspectRatio,
+  expectedGenre,
   onUpdatePrompt,
   onToggleLock,
   onChangeCamera,
+  onChangeDuration,
   onRegenerateShot,
   onMoveUp,
   onMoveDown,
@@ -53,7 +60,8 @@ export const ShotCard: React.FC<ShotCardProps> = ({
   const [isEditingPrompt, setIsEditingPrompt] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState(shot.prompt);
 
-  const asset = getAssetForShot(shot);
+  // Fix 2: Strict Look Guarantee — Asset always belongs to the storyboard's selected genre
+  const asset = getAssetForShot(shot, expectedGenre);
 
   const handleSavePrompt = () => {
     onUpdatePrompt(shot.id, editedPrompt);
@@ -65,7 +73,7 @@ export const ShotCard: React.FC<ShotCardProps> = ({
     setIsEditingPrompt(false);
   };
 
-  // Determine aspect ratio class
+  // Fix 5: Ensure 9:16 and 1:1 have strict aspect ratio containers and object-fit: cover
   const aspectClass = 
     aspectRatio === '9:16' ? 'aspect-[9/16]' :
     aspectRatio === '1:1' ? 'aspect-square' :
@@ -146,7 +154,7 @@ export const ShotCard: React.FC<ShotCardProps> = ({
         </button>
       </div>
 
-      {/* Media Preview Container */}
+      {/* Media Preview Container with object-fit: cover */}
       <div className={`w-full relative bg-surface-obsidian overflow-hidden ${aspectClass}`}>
         {shot.status === 'done' ? (
           <div className="w-full h-full relative">
@@ -158,6 +166,7 @@ export const ShotCard: React.FC<ShotCardProps> = ({
               muted
               playsInline
               className="w-full h-full object-cover"
+              style={{ objectFit: 'cover' }}
             />
             {/* Overlay Badges */}
             <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-surface-obsidian/85 backdrop-blur-md px-2.5 py-1 rounded-md border border-cine-border/80 text-[10px] text-text-primary font-semibold">
@@ -171,6 +180,7 @@ export const ShotCard: React.FC<ShotCardProps> = ({
               src={asset.posterUrl || asset.svgFallback} 
               alt="Rendering frame"
               className="absolute inset-0 w-full h-full object-cover opacity-20 filter blur-sm" 
+              style={{ objectFit: 'cover' }}
             />
             <div className="relative z-10 text-center space-y-3 max-w-[200px]">
               <div className="w-9 h-9 mx-auto rounded-full border-2 border-cine-amber border-t-transparent animate-spin" />
@@ -206,6 +216,7 @@ export const ShotCard: React.FC<ShotCardProps> = ({
               src={asset.posterUrl || asset.svgFallback}
               alt={shot.shotType}
               className="w-full h-full object-cover"
+              style={{ objectFit: 'cover' }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-surface-obsidian via-transparent to-transparent opacity-80" />
             <div className="absolute bottom-3 left-3 right-3 text-center">
@@ -216,10 +227,16 @@ export const ShotCard: React.FC<ShotCardProps> = ({
           </div>
         )}
 
-        {/* Camera Overlay Badge */}
-        <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-surface-obsidian/85 backdrop-blur-md px-2 py-0.5 rounded border border-cine-border text-[10px] text-cine-amber font-mono">
-          <Camera className="w-3 h-3" />
-          <span>{shot.cameraMotion.replace('_', ' ').toUpperCase()}</span>
+        {/* Camera & Duration Overlay Badges */}
+        <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+          <div className="flex items-center gap-1 bg-surface-obsidian/85 backdrop-blur-md px-2 py-0.5 rounded border border-cine-border text-[10px] text-cine-amber font-mono">
+            <Camera className="w-3 h-3" />
+            <span>{shot.cameraMotion.replace('_', ' ').toUpperCase()}</span>
+          </div>
+          <div className="flex items-center gap-1 bg-surface-obsidian/85 backdrop-blur-md px-2 py-0.5 rounded border border-cine-border text-[10px] text-text-secondary font-mono">
+            <Clock className="w-3 h-3 text-cine-amber" />
+            <span>{shot.durationSec || 5}s</span>
+          </div>
         </div>
       </div>
 
@@ -274,8 +291,8 @@ export const ShotCard: React.FC<ShotCardProps> = ({
           )}
         </div>
 
-        {/* Camera Selector & Action Button */}
-        <div className="pt-2 border-t border-cine-border/60 space-y-3">
+        {/* Camera Selector & Duration Settings */}
+        <div className="pt-2 border-t border-cine-border/60 space-y-2.5">
           <div className="flex items-center justify-between gap-2">
             <label htmlFor={`camera-select-${shot.id}`} className="text-[11px] font-semibold text-text-muted">
               Camera Motion:
@@ -294,8 +311,30 @@ export const ShotCard: React.FC<ShotCardProps> = ({
             </select>
           </div>
 
-          {/* Regenerate Single Shot Button */}
           <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold text-text-muted">
+              Shot Duration:
+            </span>
+            <div className="flex items-center gap-1">
+              {DURATION_OPTIONS.map((dur) => (
+                <button
+                  key={dur}
+                  type="button"
+                  onClick={() => onChangeDuration(shot.id, dur)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-colors ${
+                    (shot.durationSec || 5) === dur
+                      ? 'bg-cine-amber/20 border-cine-amber text-cine-amber'
+                      : 'bg-surface-raised border-cine-border text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  {dur}s
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Regenerate Single Shot Button (Rotates asset variation) */}
+          <div className="pt-1">
             <button
               type="button"
               disabled={isGenerating || shot.status === 'rendering'}
@@ -310,7 +349,7 @@ export const ShotCard: React.FC<ShotCardProps> = ({
           {/* Source Attribution Note */}
           <div className="flex items-center justify-between text-[10px] text-text-muted/70 pt-1">
             <span className="truncate max-w-[170px]" title={asset.title}>
-              Asset: {asset.title}
+              Look: {expectedGenre} • {asset.title}
             </span>
             <a
               href={asset.sourceUrl}

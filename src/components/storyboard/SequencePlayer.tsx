@@ -5,13 +5,11 @@ import {
   SkipBack, 
   SkipForward, 
   Repeat, 
-  Volume2, 
-  VolumeX, 
   Maximize2, 
   Copy, 
   Check, 
-  Film,
-  Layers
+  Film, 
+  Layers 
 } from 'lucide-react';
 import { StoryboardShot, StylePreset, AspectRatio } from '../../types';
 import { getAssetForShot, formatStoryboardRecipe } from '../../utils/storyboardHelper';
@@ -32,17 +30,16 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
 }) => {
   const [activeShotIndex, setActiveShotIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(true);
   const [isLooping, setIsLooping] = useState(true);
   const [copiedRecipe, setCopiedRecipe] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [shotDuration, setShotDuration] = useState(8);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const currentShot = shots[activeShotIndex] || shots[0];
-  const currentAsset = getAssetForShot(currentShot);
+  const currentTargetDuration = currentShot?.durationSec || 5;
+  const currentAsset = getAssetForShot(currentShot, stylePreset.genre);
 
   // Auto-advance logic
   const advanceToNextShot = () => {
@@ -71,12 +68,15 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
     advanceToNextShot();
   };
 
-  // Video timeupdate tracking
+  // Video timeupdate tracking trimmed strictly to stated shot duration (Fix 3)
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-      if (videoRef.current.duration) {
-        setShotDuration(videoRef.current.duration);
+      const t = videoRef.current.currentTime;
+      setCurrentTime(t);
+
+      // If video playback reaches or exceeds shot's stated duration, cut immediately to next shot
+      if (t >= currentTargetDuration) {
+        advanceToNextShot();
       }
     }
   };
@@ -86,31 +86,46 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
     advanceToNextShot();
   };
 
-  // Play/Pause effect on active video
+  // Reset video position and maintain play state when activeShotIndex changes
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      setCurrentTime(0);
+      if (isPlaying) {
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  }, [activeShotIndex]);
+
+  // Play/Pause toggle effect
   useEffect(() => {
     if (videoRef.current) {
       if (isPlaying) {
-        videoRef.current.play().catch(() => {
-          // autoplay policy catch
-          setIsMuted(true);
-          videoRef.current?.play().catch(() => {});
-        });
+        videoRef.current.play().catch(() => {});
       } else {
         videoRef.current.pause();
       }
     }
-  }, [isPlaying, activeShotIndex]);
+  }, [isPlaying]);
 
-  // Fallback timer if video doesn't play
+  // Fallback timer if video is not available
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isPlaying && (!currentAsset.videoUrl || currentShot.status !== 'done')) {
+      const tick = 100; // ms
       timer = setInterval(() => {
-        advanceToNextShot();
-      }, 5000);
+        setCurrentTime(prev => {
+          const next = prev + tick / 1000;
+          if (next >= currentTargetDuration) {
+            advanceToNextShot();
+            return 0;
+          }
+          return next;
+        });
+      }, tick);
     }
     return () => clearInterval(timer);
-  }, [isPlaying, activeShotIndex, currentAsset.videoUrl, currentShot.status]);
+  }, [isPlaying, activeShotIndex, currentAsset.videoUrl, currentShot.status, currentTargetDuration]);
 
   const handleCopyRecipe = () => {
     const text = formatStoryboardRecipe(
@@ -134,10 +149,11 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
     }
   };
 
+  // Fix 5: Ensure 9:16 and 1:1 have strict aspect containers and object-fit: cover
   const aspectClass = 
-    aspectRatio === '9:16' ? 'max-w-[380px] aspect-[9/16]' :
-    aspectRatio === '1:1' ? 'max-w-[540px] aspect-square' :
-    'w-full aspect-video';
+    aspectRatio === '9:16' ? 'w-[280px] sm:w-[320px] aspect-[9/16]' :
+    aspectRatio === '1:1' ? 'w-[320px] sm:w-[420px] aspect-square' :
+    'w-full max-w-4xl aspect-video';
 
   return (
     <div className="rounded-2xl bg-surface-dark border border-cine-border overflow-hidden shadow-2xl space-y-0">
@@ -157,7 +173,7 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
               </span>
             </div>
             <p className="text-xs text-text-muted truncate max-w-md">
-              "{masterIdea || 'Cinematic 3-Shot Narrative'}" • {stylePreset.name}
+              "{masterIdea || 'Cinematic 3-Shot Narrative'}" • {stylePreset.name} ({stylePreset.genre})
             </p>
           </div>
         </div>
@@ -188,24 +204,25 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
         </div>
       </div>
 
-      {/* Main Theater Display Container */}
+      {/* Main Theater Display Container with object-fit: cover */}
       <div 
         ref={containerRef}
-        className="relative bg-surface-obsidian flex items-center justify-center p-2 sm:p-6 min-h-[320px] sm:min-h-[460px]"
+        className="relative bg-surface-obsidian flex items-center justify-center p-3 sm:p-6 min-h-[340px] sm:min-h-[480px]"
       >
         <div className={`relative mx-auto rounded-xl overflow-hidden shadow-2xl border border-cine-border/60 ${aspectClass}`}>
           {currentShot.status === 'done' ? (
             <video
-              key={currentShot.id}
+              key={`${currentShot.id}-${currentAsset.id}`}
               ref={videoRef}
               src={currentAsset.videoUrl}
               poster={currentAsset.posterUrl || currentAsset.svgFallback}
               autoPlay={isPlaying}
-              muted={isMuted}
+              muted
               playsInline
               onTimeUpdate={handleTimeUpdate}
               onEnded={handleVideoEnded}
               className="w-full h-full object-cover"
+              style={{ objectFit: 'cover' }}
             />
           ) : (
             <div className="w-full h-full relative">
@@ -213,6 +230,7 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
                 src={currentAsset.posterUrl || currentAsset.svgFallback}
                 alt={currentShot.shotType}
                 className="w-full h-full object-cover"
+                style={{ objectFit: 'cover' }}
               />
               <div className="absolute inset-0 bg-surface-obsidian/60 backdrop-blur-xs flex items-center justify-center">
                 <span className="text-xs text-text-muted bg-surface-obsidian/80 px-3 py-1.5 rounded-lg border border-cine-border">
@@ -233,10 +251,12 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
             {currentShot.cameraMotion.replace('_', ' ').toUpperCase()}
           </div>
 
-          {/* Cut Transition Flash indicator */}
-          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-text-muted bg-surface-obsidian/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-cine-border">
-            <span className="truncate max-w-[80%]">"{currentShot.prompt}"</span>
-            <span className="font-mono">{currentTime.toFixed(1)}s / {shotDuration.toFixed(1)}s</span>
+          {/* Prompt & Trimmed Duration Info */}
+          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-text-muted bg-surface-obsidian/85 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-cine-border">
+            <span className="truncate max-w-[70%]">"{currentShot.prompt}"</span>
+            <span className="font-mono text-text-primary font-bold">
+              {Math.min(currentTime, currentTargetDuration).toFixed(1)}s / {currentTargetDuration.toFixed(1)}s
+            </span>
           </div>
         </div>
       </div>
@@ -248,20 +268,21 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
           <div className="flex items-center justify-between text-xs text-text-secondary">
             <span className="font-bold flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-cine-amber" />
-              Continuous 3-Shot Reel Progress
+              Continuous 3-Shot Reel Progress (Trimmed to Shot Durations)
             </span>
             <span className="text-text-muted font-mono">
-              Shot {activeShotIndex + 1} of {shots.length}
+              Shot {activeShotIndex + 1} of {shots.length} ({currentTargetDuration}s target)
             </span>
           </div>
 
-          {/* 3 Interactive Timeline Segments */}
+          {/* 3 Interactive Timeline Segments matched to shot durations */}
           <div className="grid grid-cols-3 gap-2">
             {shots.map((shot, idx) => {
               const isActive = idx === activeShotIndex;
               const isPast = idx < activeShotIndex;
+              const duration = shot.durationSec || 5;
               const progressPercent = isActive 
-                ? (currentTime / (shotDuration || 8)) * 100 
+                ? Math.min(100, (currentTime / duration) * 100)
                 : isPast ? 100 : 0;
 
               return (
@@ -275,7 +296,7 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
                   className={`h-2.5 rounded-full bg-surface-dark border transition-all relative overflow-hidden group cursor-pointer ${
                     isActive ? 'border-cine-amber ring-1 ring-cine-amber/50' : 'border-cine-border'
                   }`}
-                  title={`Jump to Shot ${idx + 1}: ${shot.shotType}`}
+                  title={`Jump to Shot ${idx + 1}: ${shot.shotType} (${duration}s)`}
                 >
                   <div
                     className={`h-full transition-all duration-100 ${
@@ -305,13 +326,13 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
                 }`}
               >
                 <span className="truncate">#{idx + 1} {shot.shotType.split(' ')[0]}</span>
-                <span className="text-[10px] text-text-muted font-mono">{shot.durationSec}s</span>
+                <span className="text-[10px] text-text-muted font-mono">{shot.durationSec || 5}s</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Master Playback Buttons */}
+        {/* Master Playback Transport Controls (Mute button removed as per Fix 4) */}
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
             {/* Loop Sequence Toggle */}
@@ -323,20 +344,10 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
                   ? 'bg-cine-amber/20 border-cine-amber text-cine-amber'
                   : 'bg-surface-dark border-cine-border text-text-muted hover:text-text-primary'
               }`}
-              title={isLooping ? 'Loop: ON' : 'Loop: OFF'}
+              title={isLooping ? 'Loop Reel: ON' : 'Loop Reel: OFF'}
             >
               <Repeat className="w-4 h-4" />
               <span className="hidden sm:inline">Loop Reel</span>
-            </button>
-
-            {/* Mute Toggle */}
-            <button
-              type="button"
-              onClick={() => setIsMuted(!isMuted)}
-              className="p-2.5 rounded-xl bg-surface-dark border border-cine-border hover:border-cine-amber text-text-muted hover:text-text-primary transition-colors"
-              title={isMuted ? 'Unmute' : 'Mute'}
-            >
-              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
           </div>
 

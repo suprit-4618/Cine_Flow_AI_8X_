@@ -24,6 +24,7 @@ import {
 } from '../types';
 import { 
   deconstructIdeaIntoShots, 
+  rotateAssetForShot, 
   IdeaSuggestion 
 } from '../utils/storyboardHelper';
 import { StorageService } from '../services/storage';
@@ -68,15 +69,15 @@ export const StoryboardPage: React.FC = () => {
     setTimeout(() => setSavedFeedback(false), 2500);
   }, [idea, selectedStyle, aspectRatio, shots, storyboardId]);
 
-  // Simulate generation for a list of shots
+  // Simulate generation for a list of shots with rotation guarantee
   const runGenerationPipeline = useCallback(async (shotsToRun: StoryboardShot[]) => {
     setIsGenerating(true);
 
     const stages: { stage: StageText; progress: number; delay: number }[] = [
-      { stage: 'Queued', progress: 15, delay: 500 },
-      { stage: 'Rendering', progress: 50, delay: 900 },
-      { stage: 'Finishing', progress: 85, delay: 800 },
-      { stage: 'Completed', progress: 100, delay: 600 },
+      { stage: 'Queued', progress: 15, delay: 400 },
+      { stage: 'Rendering', progress: 50, delay: 800 },
+      { stage: 'Finishing', progress: 85, delay: 700 },
+      { stage: 'Completed', progress: 100, delay: 500 },
     ];
 
     let currentWorkingShots = [...shotsToRun];
@@ -113,12 +114,15 @@ export const StoryboardPage: React.FC = () => {
     runGenerationPipeline(newShots);
   };
 
-  // Regenerate only unlocked shots
+  // Regenerate only unlocked shots with rotated variety (Fix 1 & 2)
   const handleRegenerateUnlocked = () => {
     const updated = shots.map((s) => {
       if (s.locked) return s;
+      // Rotate asset within the selected genre look, ensuring a new output
+      const newAsset = rotateAssetForShot(s.resultAssetId, selectedStyle.genre, s.shotType);
       return {
         ...s,
+        resultAssetId: newAsset.id,
         status: 'queued' as GenerationStatus,
         progress: 0,
         stageText: 'Queued' as StageText,
@@ -128,31 +132,46 @@ export const StoryboardPage: React.FC = () => {
     runGenerationPipeline(updated);
   };
 
-  // Regenerate a single specific shot
+  // Regenerate a single specific shot with rotation variety (Fix 1 & 2)
   const handleRegenerateSingleShot = async (shotId: string) => {
     const targetShot = shots.find((s) => s.id === shotId);
     if (!targetShot) return;
 
+    // Pick rotated asset within the SAME genre look (never same output twice in a row)
+    const newAsset = rotateAssetForShot(targetShot.resultAssetId, selectedStyle.genre, targetShot.shotType);
+
     // Set to queued
     setShots((prev) =>
-      prev.map((s) => (s.id === shotId ? { ...s, status: 'queued', progress: 10, stageText: 'Queued' } : s))
+      prev.map((s) => (s.id === shotId ? { 
+        ...s, 
+        resultAssetId: newAsset.id,
+        status: 'queued', 
+        progress: 10, 
+        stageText: 'Queued' 
+      } : s))
     );
 
     // Simulate rendering stages
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 500));
     setShots((prev) =>
       prev.map((s) => (s.id === shotId ? { ...s, status: 'rendering', progress: 55, stageText: 'Rendering' } : s))
     );
 
-    await new Promise((r) => setTimeout(r, 800));
+    await new Promise((r) => setTimeout(r, 700));
     setShots((prev) =>
       prev.map((s) => (s.id === shotId ? { ...s, status: 'rendering', progress: 90, stageText: 'Finishing' } : s))
     );
 
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 400));
     setShots((prev) => {
       const updated = prev.map((s) =>
-        s.id === shotId ? { ...s, status: 'done' as GenerationStatus, progress: 100, stageText: 'Completed' as StageText } : s
+        s.id === shotId ? { 
+          ...s, 
+          resultAssetId: newAsset.id,
+          status: 'done' as GenerationStatus, 
+          progress: 100, 
+          stageText: 'Completed' as StageText 
+        } : s
       );
       handleSaveToHistory(updated);
       return updated;
@@ -177,6 +196,13 @@ export const StoryboardPage: React.FC = () => {
   const handleChangeCamera = (shotId: string, motion: CameraMotion) => {
     setShots((prev) =>
       prev.map((s) => (s.id === shotId ? { ...s, cameraMotion: motion } : s))
+    );
+  };
+
+  // Change shot duration (Fix 3)
+  const handleChangeDuration = (shotId: string, durationSec: number) => {
+    setShots((prev) =>
+      prev.map((s) => (s.id === shotId ? { ...s, durationSec } : s))
     );
   };
 
@@ -270,7 +296,7 @@ export const StoryboardPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-cine-amber animate-pulse" />
               <span className="text-sm font-bold text-text-primary">
-                3-Shot Direction Setup
+                3-Shot Direction Setup ({selectedStyle.name})
               </span>
               <span className="text-xs text-text-muted">
                 ({shots.filter((s: StoryboardShot) => s.locked).length} locked)
@@ -345,9 +371,11 @@ export const StoryboardPage: React.FC = () => {
                 index={index}
                 totalShots={shots.length}
                 aspectRatio={aspectRatio}
+                expectedGenre={selectedStyle.genre}
                 onUpdatePrompt={handleUpdatePrompt}
                 onToggleLock={handleToggleLock}
                 onChangeCamera={handleChangeCamera}
+                onChangeDuration={handleChangeDuration}
                 onRegenerateShot={handleRegenerateSingleShot}
                 onMoveUp={handleMoveUp}
                 onMoveDown={handleMoveDown}
@@ -376,7 +404,7 @@ export const StoryboardPage: React.FC = () => {
                 Aesthetic & Sequence Continuity Note:
               </p>
               <p className="mt-0.5">
-                All 3 shots are rendered in synchronized "{selectedStyle.name}" color palettes and matching environmental lighting. Shots showcase matched atmospheric tone and location staging across Wide, Medium, and Close-up perspectives without falsely asserting identical human actors.
+                All 3 shots are rendered in synchronized "{selectedStyle.name}" ({selectedStyle.genre}) color palettes and matching environmental lighting. Shots showcase matched atmospheric tone and location staging across Wide, Medium, and Close-up perspectives without falsely asserting identical human actors.
               </p>
             </div>
           </div>
