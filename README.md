@@ -13,11 +13,12 @@ CineFlow AI is a high-fidelity front-end prototype designed for rapid evaluation
 | Feature / Subsystem | Real Implementation | Simulated Aspect | Rationale |
 | :--- | :--- | :--- | :--- |
 | **Studio & Storyboard UI** | **100% Real Code** (React 18 + TS + Tailwind) | None | Full responsive layout, state management, and interaction design. |
-| **AI Image Generation** | **Real Live Generation** (via free third-party Pollinations.AI service) | Rate limits & queue spacing | Live AI generation based on user prompt, style words, aspect ratio, and seed with client-side rate-limit queue. |
-| **Camera Motion Choreography** | **100% Real Client-Side CSS Motion** | 3D WebGL / GPU Video encoding | Looping 2D CSS transforms simulate camera motion (pan, tilt, orbit, dolly, zoom, handheld) over stills, honoring `prefers-reduced-motion`. |
-| **Sample Video Clips** | **12 Royalty-Free HD Mixkit Clips + Posters** | Real-time AI Video Generation | Provides instant reference visuals and graceful fallback if live image generation is unavailable or times out. |
+| **Studio Image Generation** | **Real Live Generation** (via free third-party Pollinations.AI service) | Cloud GPU backend ownership | Real live image synthesis from prompt + style words, aspect ratio dimensions, and seed with client-side rate-limit queue. |
+| **Studio Camera Motion** | **100% Real Client-Side CSS Motion** | 3D WebGL / GPU Video encoding | Looping 2D CSS transforms simulate camera motion (pan, tilt, orbit, dolly, zoom, handheld) over stills, honoring `prefers-reduced-motion`. |
+| **Storyboard Sequences** | **Curated Multi-Angle Sample Sets** | Live multi-shot video generation | Demonstrates synchronized 3-shot narrative structure (Wide, Medium, Close-up) using matching genre sample sets. |
+| **Sample Video Clips** | **12 Royalty-Free HD Mixkit Clips + Posters** | Real-time AI Video Diffusion | Provides instant reference visuals and graceful fallback if live image generation is unavailable or times out. |
 | **Media Playback & Auto-Advance** | **100% Real HTML5 Video & Master Player** | None | Continuous multi-shot reel playback with duration trimming and progress markers. |
-| **Generation Queue & Lifecycle** | **Real Sequential Rate-Limited Queue** (`Queued` $\to$ `Waiting for your turn` $\to$ `Rendering` $\to$ `Finishing` $\to$ `Done`) | Background workers | Sequential 1-by-1 queue with 45s timeout protection and honest sample fallbacks. |
+| **Generation Queue & Lifecycle** | **Real Sequential Rate-Limited Queue** (`Queued` $\to$ `Waiting for your turn` $\to$ `Rendering` $\to$ `Finishing` $\to$ `Done`) | Server background workers | Sequential 1-by-1 queue with 45s timeout protection and honest sample fallbacks. |
 | **Storage & Creations Vault** | **100% Real Versioned `localStorage`** | Remote Cloud Database | Stores prompt, parameters, seed, and image URLs only (zero image data binaries in storage) with poster fallback. |
 
 ---

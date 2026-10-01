@@ -191,16 +191,9 @@ export const ShotCard: React.FC<ShotCardProps> = ({
 
             {/* Overlay Status Badge */}
             <div className="absolute top-2 left-2 flex flex-wrap items-center gap-1.5 pointer-events-none">
-              {shot.isFallback ? (
-                <span className="px-2 py-0.5 rounded-md bg-amber-950/90 backdrop-blur border border-cine-amber/60 text-[10px] font-bold text-cine-amber flex items-center gap-1 shadow-md">
-                  <AlertCircle className="w-3 h-3" />
-                  <span>Sample shown: live generation unavailable</span>
-                </span>
-              ) : (
-                <span className="px-2 py-0.5 rounded-md bg-surface-obsidian/90 backdrop-blur border border-cine-border text-[10px] font-bold text-cine-amber flex items-center gap-1 shadow-md">
-                  <span>Image with camera motion</span>
-                </span>
-              )}
+              <span className="px-2 py-0.5 rounded-md bg-surface-obsidian/90 backdrop-blur border border-cine-border text-[10px] font-bold text-cine-amber flex items-center gap-1 shadow-md">
+                <span>Sample Footage</span>
+              </span>
             </div>
           </div>
         ) : shot.status === 'rendering' || shot.status === 'queued' ? (

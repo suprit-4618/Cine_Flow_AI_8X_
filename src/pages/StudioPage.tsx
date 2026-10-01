@@ -47,7 +47,7 @@ export const StudioPage: React.FC = () => {
             </span>
           </div>
           <p className="text-sm text-text-muted mt-1">
-            Prompt-to-video synthesis engine with 2D camera motion control, style presets, and deterministic neural matching.
+            Live AI image generation with looping 2D camera motion, style presets, and honest sample fallbacks.
           </p>
         </div>
 

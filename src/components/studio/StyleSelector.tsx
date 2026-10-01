@@ -10,10 +10,10 @@ export const StyleSelector: React.FC = () => {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <label className="text-sm font-semibold text-text-primary flex items-center gap-2">
-          <span>Cinematic Style</span>
-          <span className="text-xs text-text-dim font-normal">({STYLE_PRESETS.length} presets)</span>
+          <span>Start from a look</span>
+          <span className="text-xs text-text-dim font-normal">({STYLE_PRESETS.length} looks)</span>
         </label>
-        <span className="text-xs text-text-dim">Affects color grading & atmosphere</span>
+        <span className="text-xs text-text-dim">Sets style words & aesthetic mood</span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
