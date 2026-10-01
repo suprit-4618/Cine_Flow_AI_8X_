@@ -1,6 +1,6 @@
 # CineFlow AI — Cinematic Generative Video Studio
 
-> **CineFlow AI** is a director-grade AI generative creative studio built with React, TypeScript, Vite, and TailwindCSS. It features an original **3-Shot Storyboard Engine** that transforms conceptual premises into synchronized multi-angle cinematic sequences.
+> **CineFlow AI** is a director-grade AI generative creative studio built with React, TypeScript, Vite, and TailwindCSS. It features an original **3-Shot Storyboard Engine** that transforms conceptual premises into synchronized multi-angle cinematic sequences, plus custom 2D camera motion controls and an **Explore Showcase**.
 
 ---
 
@@ -13,10 +13,11 @@ CineFlow AI operates entirely client-side for rapid prototyping, zero cloud bill
 
 ## ✨ Core Features
 
-1. **Cinematic Studio:** Single-shot prompt crafting with custom 2D camera motion simulations (Pan, Tilt, Orbit, Dolly, Handheld Shake), 6 style presets, and 4 specialized model tiers.
-2. **3-Shot Storyboard Engine (Original Feature):** Deconstruct a narrative idea into a synchronized 3-shot sequence (`Wide Establishing`, `Medium Subject`, `Close-Up Detail`) with individual shot regeneration and a continuous master theater player.
-3. **Creations History Vault:** Client-side persistence using versioned `localStorage` with search, style filtering, favoriting, and prompt forking/remixing.
-4. **Accessible & Responsive Design System:** WCAG AA compliant contrast ($\ge 4.5:1$), visible high-contrast focus rings, skip-to-content links, $\ge 44\text{px}$ touch targets, and `prefers-reduced-motion` support.
+1. **Cinematic Studio (`/`):** Single-shot prompt crafting with custom 2D camera motion simulations (Pan Right, Tilt Up, Orbit CW, Dolly In, Zoom In, Handheld), 6 style presets, and 4 specialized model tiers.
+2. **3-Shot Storyboard Engine (`/storyboard` - Original Feature):** Deconstruct a narrative idea into a synchronized 3-shot sequence (`Wide Establishing`, `Medium Subject`, `Close-Up Detail`) with individual shot locking/regeneration, strict look isolation, duration trimming, and a continuous Master Theater player with auto-advance.
+3. **Creations History Vault (`/history`):** Client-side persistence using versioned `localStorage` with real-time keyword search, filter chips (`All`, `Video`, `Image`, `Storyboard`, `Favorites`), 5-second undo toast, and an accessible focus-trapped detail modal.
+4. **Explore Showcase (`/explore`):** Curated gallery of 12 director prompt recipes across 4 visual styles with one-click "Remix in Studio" and "Direct Storyboard" actions.
+5. **Accessible & Responsive Design System:** WCAG AA compliant contrast ($\ge 4.5:1$), visible high-contrast focus rings, skip-to-content links, $\ge 44\text{px}$ touch targets, and `prefers-reduced-motion` compliance.
 
 ---
 
@@ -25,8 +26,9 @@ CineFlow AI operates entirely client-side for rapid prototyping, zero cloud bill
 * **Framework:** React 18 + Vite + TypeScript
 * **Styling:** TailwindCSS with bespoke Obsidian/Amber Gold cinematic design system
 * **Icons:** `lucide-react`
-* **Routing:** `react-router-dom`
-* **Storage:** Versioned `localStorage` with safe try/catch error handling
+* **Routing:** `react-router-dom` (with `vercel.json` SPA catch-all rewrites)
+* **Testing:** `vitest` unit test suite (18 unit tests covering storyboard variety, state machine, and storage resilience)
+* **Storage:** Versioned `localStorage` with safe try/catch error handling and in-memory fallback
 
 ---
 
@@ -40,13 +42,16 @@ cd cine_flow_ai
 # 2. Install dependencies
 npm install
 
-# 3. Fetch and optimize video sample clips (Downloads 12 MP4 clips into /public/samples/)
+# 3. Run automated unit tests
+npm test
+
+# 4. Fetch and optimize video sample clips (Downloads 12 MP4 clips into /public/samples/)
 python process_assets.py
 
-# 4. Start development server
+# 5. Start development server
 npm run dev
 
-# 5. Build production bundle
+# 6. Build production bundle
 npm run build
 ```
 
@@ -56,20 +61,20 @@ npm run build
 
 ## 🌐 Deploying to Vercel
 
-CineFlow AI includes an empty `.vercelignore` file so that a direct CLI deployment includes all local MP4 media files in `/public/samples/`.
+CineFlow AI includes an empty `.vercelignore` file and a `vercel.json` with SPA rewrites so that a direct CLI deployment includes all local MP4 media files in `/public/samples/` and handles deep-link routing seamlessly.
 
 To deploy directly to Vercel:
 
 ```bash
-# 1. Ensure you are in the project root directory
-cd d:/hackathon/cine_flow_ai
+# 1. Login to Vercel
+npx vercel login
 
-# 2. Deploy directly to production via Vercel CLI
-vercel --prod
+# 2. Deploy directly to production
+npx vercel --prod
 ```
 
 ---
 
 ## 📜 Asset Attribution & License
 
-All visual media assets utilized in this prototype are royalty-free public stock media licensed under Mixkit free licenses. Complete attribution URLs and license specifications are documented in [`CREDITS.md`](./CREDITS.md).
+All visual media assets utilized in this prototype are royalty-free public stock media licensed under Mixkit free licenses. Complete attribution URLs, original page titles, and license clauses are documented in [`CREDITS.md`](./CREDITS.md).
