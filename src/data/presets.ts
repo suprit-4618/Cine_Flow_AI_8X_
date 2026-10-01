@@ -2,36 +2,36 @@ import { ModelPreset, StylePreset, CameraMotion, AspectRatio } from '../types';
 
 export const MOCK_MODELS: ModelPreset[] = [
   {
+    id: 'voidvector-hyper',
+    name: 'Fast',
+    badge: '3s',
+    description: 'Quick concept drafts in 3 seconds.',
+    baseCost: 8,
+    renderTimeSec: 3,
+  },
+  {
     id: 'cinemotion-v3',
-    name: 'CineMotion v3',
-    badge: 'Flagship',
-    description: 'Ultra-fluid 60fps cinematic coherence with anamorphic lens simulation.',
+    name: 'Balanced',
+    badge: '5s',
+    description: 'Standard cinematic detail in 5 seconds.',
     baseCost: 15,
     renderTimeSec: 5,
   },
   {
     id: 'realismax-alpha',
-    name: 'RealisMax Alpha',
-    badge: 'Photoreal',
-    description: 'Hyper-detailed physical lighting, natural subsurface skin scatter and volumetric fog.',
+    name: 'Quality',
+    badge: '6s',
+    description: 'Maximum physical realism and lighting in 6 seconds.',
     baseCost: 20,
     renderTimeSec: 6,
   },
   {
     id: 'chromapulse-pro',
-    name: 'ChromaPulse Pro',
-    badge: 'Stylized',
-    description: 'High-contrast neon saturation, chromatic aberration, and artistic flair.',
+    name: 'Stylized',
+    badge: '4s',
+    description: 'Vivid color contrast and stylized lighting in 4 seconds.',
     baseCost: 12,
     renderTimeSec: 4,
-  },
-  {
-    id: 'voidvector-hyper',
-    name: 'VoidVector Hyper',
-    badge: 'Fast Draft',
-    description: 'Rapid spatial generation tuned for fast concept visualization and storyboard ideation.',
-    baseCost: 8,
-    renderTimeSec: 3,
   },
 ];
 

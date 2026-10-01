@@ -76,20 +76,20 @@ export const ExplorePage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-              <Compass className="w-7 h-7 text-cine-amber" />
-              <span>Explore Showcase</span>
+              <Compass className="w-6 h-6 text-accent" />
+              <span>Explore</span>
             </h1>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-surface-raised text-cine-amber border border-cine-border">
-              {EXPLORE_ITEMS.length} Curated Masters
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-surface-raised text-text-muted border border-cine-border">
+              {EXPLORE_ITEMS.length} Prompts
             </span>
           </div>
           <p className="text-sm text-text-muted mt-1">
-            Discover community-curated prompt recipes, camera movements, and multi-angle scene choreography.
+            Curated prompt recipes and camera movements ready to remix.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <PrototypeBadge />
+          <PrototypeBadge variant="subtle" />
         </div>
       </div>
 

@@ -254,19 +254,16 @@ export const StoryboardPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight">
-              3-Shot Storyboard Engine
+              3-Shot Storyboard
             </h1>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-cine-amber/20 text-cine-amber border border-cine-amber/40 shadow-amber-sm">
-              Original Signature Feature
-            </span>
           </div>
           <p className="text-sm text-text-muted mt-1">
-            Transform a single creative premise into a synchronized 3-shot sequence (Wide Establishing, Medium Subject, Close-Up Detail).
+            Build a synchronized 3-shot sequence (Wide Establishing, Medium Subject, Close-Up Detail) with matching look.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <PrototypeBadge variant="prominent" />
+          <PrototypeBadge variant="subtle" />
         </div>
       </div>
 
@@ -342,10 +339,10 @@ export const StoryboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowPlayerModal(!showPlayerModal)}
-                className="px-4 py-2 rounded-xl bg-cine-amber hover:bg-cine-amber-hover text-surface-obsidian text-xs font-bold flex items-center gap-1.5 shadow-amber-md transition-transform hover:scale-105"
+                className="px-4 py-2 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-transform hover:scale-105"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
-                <span>{showPlayerModal ? 'Hide Master Theater' : 'Play Full Sequence'}</span>
+                <span>{showPlayerModal ? 'Hide Sequence' : 'Play Sequence'}</span>
               </button>
             </div>
           </div>
