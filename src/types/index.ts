@@ -49,6 +49,20 @@ export interface MediaAsset {
   license: string;
 }
 
+export interface ExploreItem {
+  id: string;
+  title: string;
+  prompt: string;
+  styleId: string;
+  genre: GenreCategory;
+  modelId: string;
+  cameraMotion: CameraMotion;
+  aspectRatio: AspectRatio;
+  durationSec: number;
+  assetId: string;
+  tags: string[];
+}
+
 export interface SingleGeneration {
   id: string;
   prompt: string;

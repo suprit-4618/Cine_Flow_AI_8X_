@@ -28,3 +28,5 @@ dist-ssr
 /public/samples/*.mp4
 
 # NOTE: Do NOT add .agent-logs/ here as per assignment requirements
+
+.vercel

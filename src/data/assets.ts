@@ -218,9 +218,13 @@ export function matchAssetForPrompt(prompt: string, genre: string, shotType: 'wi
   const normalizedPrompt = prompt.toLowerCase();
   const words = normalizedPrompt.split(/\W+/).filter(w => w.length > 2);
 
-  // Filter assets by shot type if possible, or fallback to any
-  const candidates = SAMPLE_ASSETS.filter(a => a.shotType === shotType || shotType === 'standalone');
-  const pool = candidates.length > 0 ? candidates : SAMPLE_ASSETS;
+  // First filter by genre to guarantee set consistency
+  const genreAssets = SAMPLE_ASSETS.filter(a => a.genre === genre);
+  const basePool = genreAssets.length > 0 ? genreAssets : SAMPLE_ASSETS;
+
+  // Filter assets by shot type if possible, or fallback to base genre pool
+  const candidates = basePool.filter(a => a.shotType === shotType || shotType === 'standalone');
+  const pool = candidates.length > 0 ? candidates : basePool;
 
   let bestMatch: MediaAsset | null = null;
   let highestScore = -1;
