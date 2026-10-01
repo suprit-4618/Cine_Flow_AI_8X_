@@ -23,6 +23,7 @@ export const StudioPage: React.FC = () => {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [inspectingResult, setInspectingResult] = useState<SingleGeneration | null>(null);
+  const [dockHeight, setDockHeight] = useState<number>(140);
 
   const isGenerating = activeJobs.length > 0;
 
@@ -62,7 +63,10 @@ export const StudioPage: React.FC = () => {
   ];
 
   return (
-    <div className="relative min-h-[calc(100vh-140px)] flex flex-col justify-between pb-44 sm:pb-36">
+    <div 
+      style={{ paddingBottom: `${dockHeight + 28}px` }}
+      className="relative min-h-[calc(100vh-140px)] flex flex-col justify-between"
+    >
       {/* Storage Warning if blocked */}
       <StorageBlockedBanner isBlocked={isStorageBlocked} />
 
@@ -146,16 +150,13 @@ export const StudioPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Floating Anchored Hero Composer Bar */}
-      <div className="fixed bottom-16 sm:bottom-6 left-0 right-0 px-4 sm:px-6 lg:px-8 z-40 pointer-events-none">
-        <div className="max-w-4xl mx-auto pointer-events-auto">
-          <ComposerBar
-            textareaRef={textareaRef}
-            onGenerate={handleGenerate}
-            isGenerating={isGenerating}
-          />
-        </div>
-      </div>
+      {/* Full-Width Solid Bottom Dock */}
+      <ComposerBar
+        textareaRef={textareaRef}
+        onGenerate={handleGenerate}
+        isGenerating={isGenerating}
+        onDockResize={setDockHeight}
+      />
 
       {/* Result Player Modal */}
       {inspectingResult && (
