@@ -64,16 +64,16 @@ export const StudioPage: React.FC = () => {
 
   return (
     <div 
-      style={{ paddingBottom: `${dockHeight + 28}px` }}
+      style={{ paddingBottom: `${dockHeight + 36}px` }}
       className="relative min-h-[calc(100vh-140px)] flex flex-col justify-between"
     >
       {/* Storage Warning if blocked */}
       <StorageBlockedBanner isBlocked={isStorageBlocked} />
 
-      {/* Main Media Canvas */}
-      <div className="space-y-8 animate-fadeIn">
+      {/* Main Media Canvas - Aligned to the 760px Centered Column */}
+      <div className="max-w-[760px] mx-auto w-full space-y-8 animate-fadeIn">
         {/* Simple Honest Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-1">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight">
               Studio
@@ -90,7 +90,7 @@ export const StudioPage: React.FC = () => {
             <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">
               Generating
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               {activeJobs.map((job) => (
                 <GenerationFeedCard
                   key={job.id}
@@ -111,7 +111,7 @@ export const StudioPage: React.FC = () => {
             <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">
               Latest Creation
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               <GenerationFeedCard
                 generation={generations[0]}
                 onSelectResult={setInspectingResult}
@@ -135,7 +135,7 @@ export const StudioPage: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                   {group.assets.map((asset) => (
                     <SampleVideoCard
                       key={asset.id}
@@ -150,7 +150,7 @@ export const StudioPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Full-Width Solid Bottom Dock */}
+      {/* Floating Centered Bottom Dock */}
       <ComposerBar
         textareaRef={textareaRef}
         onGenerate={handleGenerate}
@@ -169,3 +169,4 @@ export const StudioPage: React.FC = () => {
     </div>
   );
 };
+
