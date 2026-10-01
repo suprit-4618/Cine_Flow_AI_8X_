@@ -9,6 +9,7 @@ export default {
       colors: {
         obsidian: '#0B0C10',
         surface: {
+          obsidian: '#0B0C10',
           dark: '#14161E',
           raised: '#1E222D',
           hover: '#282D3C',
@@ -18,6 +19,7 @@ export default {
           border: '#262B3B',
           'border-active': '#D97706',
           amber: '#F59E0B',
+          'amber-hover': '#D97706',
           'amber-glow': '#D97706',
           'amber-dark': '#B45309',
           'amber-light': '#FDE68A',
