@@ -7,34 +7,27 @@ export default {
   theme: {
     extend: {
       colors: {
-        obsidian: '#0E0F12',
+        obsidian: '#0B0C10',
         surface: {
-          obsidian: '#0E0F12',
-          dark: '#17181D',
-          raised: '#22242B',
-          hover: '#2C2E36',
-          active: '#363842',
+          obsidian: '#0B0C10',
+          dark: '#14161E',
+          raised: '#1E222D',
+          hover: '#282D3C',
+          active: '#32384A',
         },
         cine: {
-          border: '#2A2C35',
-          'border-active': '#FF5500',
-          amber: '#FF5500',
-          'amber-hover': '#E64D00',
-          'amber-glow': '#FF5500',
-          'amber-dark': '#CC4400',
-          'amber-light': '#FF884D',
-        },
-        accent: {
-          DEFAULT: '#FF5500',
-          hover: '#E64D00',
-          active: '#CC4400',
-          muted: '#FF550020',
+          border: '#262B3B',
+          'border-active': '#D97706',
+          amber: '#F59E0B',
+          'amber-hover': '#D97706',
+          'amber-glow': '#D97706',
+          'amber-dark': '#B45309',
+          'amber-light': '#FDE68A',
         },
         text: {
-          primary: '#F4F4F0',
-          secondary: '#D1D2D6',
-          muted: '#A1A3A9',
-          dim: '#71747C',
+          primary: '#F8FAFC',
+          muted: '#94A3B8',
+          dim: '#64748B',
         },
         status: {
           success: '#10B981',
@@ -43,7 +36,7 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
       },
       boxShadow: {

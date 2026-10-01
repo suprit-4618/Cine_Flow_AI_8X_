@@ -24,16 +24,17 @@ import {
 } from '../types';
 import { 
   deconstructIdeaIntoShots, 
-  rotateAssetForShot, 
   IdeaSuggestion 
 } from '../utils/storyboardHelper';
 import { StorageService } from '../services/storage';
+import { GenerationEngine } from '../services/generationService';
 
 export const StoryboardPage: React.FC = () => {
   const [idea, setIdea] = useState('');
   const [selectedStyle, setSelectedStyle] = useState<StylePreset>(STYLE_PRESETS[0]);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
   const [shots, setShots] = useState<StoryboardShot[]>([]);
+  const [masterSeed, setMasterSeed] = useState<number>(() => Math.floor(Math.random() * 1000000));
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPlayerModal, setShowPlayerModal] = useState(false);
   const [savedFeedback, setSavedFeedback] = useState(false);
@@ -57,6 +58,7 @@ export const StoryboardPage: React.FC = () => {
       genre: selectedStyle.genre,
       stylePresetId: selectedStyle.id,
       aspectRatio: aspectRatio,
+      seed: masterSeed,
       shots: currentShots,
       status: currentShots.every(s => s.status === 'done') ? 'done' : 'rendering',
       createdAt: new Date().toISOString(),
@@ -67,115 +69,196 @@ export const StoryboardPage: React.FC = () => {
     setStoryboardId(sbToSave.id);
     setSavedFeedback(true);
     setTimeout(() => setSavedFeedback(false), 2500);
-  }, [idea, selectedStyle, aspectRatio, shots, storyboardId]);
+  }, [idea, selectedStyle, aspectRatio, masterSeed, shots, storyboardId]);
 
-  // Simulate generation for a list of shots with rotation guarantee
-  const runGenerationPipeline = useCallback(async (shotsToRun: StoryboardShot[]) => {
+  // Execute real image generation for a batch of shots through sequential queue
+  const generateShotsReal = useCallback((shotsToQueue: StoryboardShot[], sequenceSeed: number) => {
     setIsGenerating(true);
 
-    const stages: { stage: StageText; progress: number; delay: number }[] = [
-      { stage: 'Queued', progress: 15, delay: 400 },
-      { stage: 'Rendering', progress: 50, delay: 800 },
-      { stage: 'Finishing', progress: 85, delay: 700 },
-      { stage: 'Completed', progress: 100, delay: 500 },
-    ];
+    let completedCount = 0;
+    const totalToGenerate = shotsToQueue.filter(s => !(s.locked && s.status === 'done')).length;
 
-    let currentWorkingShots = [...shotsToRun];
-
-    for (const step of stages) {
-      await new Promise((res) => setTimeout(res, step.delay));
-
-      currentWorkingShots = currentWorkingShots.map((shot) => {
-        // Skip locked shots if they are already done
-        if (shot.locked && shot.status === 'done') return shot;
-
-        return {
-          ...shot,
-          status: (step.progress === 100 ? 'done' : 'rendering') as GenerationStatus,
-          progress: step.progress,
-          stageText: step.stage,
-        };
-      });
-
-      setShots(currentWorkingShots);
+    if (totalToGenerate === 0) {
+      setIsGenerating(false);
+      return;
     }
 
-    setIsGenerating(false);
-    handleSaveToHistory(currentWorkingShots);
-  }, [handleSaveToHistory]);
+    shotsToQueue.forEach((shot) => {
+      if (shot.locked && shot.status === 'done') {
+        return;
+      }
+
+      const shotTypeKey = shot.shotType.includes('Wide') ? 'wide' :
+                          shot.shotType.includes('Medium') ? 'medium' : 'closeup';
+
+      GenerationEngine.simulateGeneration(
+        {
+          id: shot.id,
+          prompt: shot.prompt,
+          styleId: selectedStyle.id,
+          modelId: 'cinemotion-v3',
+          aspectRatio,
+          cameraMotion: shot.cameraMotion,
+          durationSec: shot.durationSec || 5,
+          seed: shot.seed !== undefined ? shot.seed : sequenceSeed,
+          shotType: shotTypeKey,
+        },
+        {
+          onProgress: (progress: number, stage: StageText) => {
+            setShots(prev => prev.map(s => s.id === shot.id ? {
+              ...s,
+              progress,
+              stageText: stage,
+              status: (stage === 'Queued' || stage === 'Waiting for your turn') ? 'queued' : 'rendering',
+            } : s));
+          },
+          onSuccess: (completedGen) => {
+            setShots(prev => {
+              const updated = prev.map(s => s.id === shot.id ? {
+                ...s,
+                status: 'done' as GenerationStatus,
+                progress: 100,
+                stageText: 'Completed' as StageText,
+                imageUrl: completedGen.imageUrl,
+                seed: completedGen.seed,
+                isFallback: completedGen.isFallback,
+                fallbackReason: completedGen.fallbackReason,
+                resultAssetId: completedGen.resultAssetId,
+              } : s);
+
+              completedCount++;
+              if (completedCount >= totalToGenerate) {
+                setIsGenerating(false);
+                handleSaveToHistory(updated);
+              }
+              return updated;
+            });
+          },
+          onError: (failedGen, errorMsg) => {
+            setShots(prev => {
+              const updated = prev.map(s => s.id === shot.id ? {
+                ...s,
+                status: 'failed' as GenerationStatus,
+                errorMessage: errorMsg || failedGen.errorMessage,
+              } : s);
+
+              completedCount++;
+              if (completedCount >= totalToGenerate) {
+                setIsGenerating(false);
+              }
+              return updated;
+            });
+          },
+        }
+      );
+    });
+  }, [selectedStyle.id, aspectRatio, handleSaveToHistory]);
 
   // Handle Deconstruct & Generate
   const handleDeconstruct = () => {
     if (!idea.trim()) return;
 
-    const newShots = deconstructIdeaIntoShots(idea, selectedStyle);
-    setShots(newShots);
+    const newSeed = Math.floor(Math.random() * 1000000);
+    setMasterSeed(newSeed);
+
+    const initialShots = deconstructIdeaIntoShots(idea, selectedStyle);
+    const shotsWithSeed = initialShots.map(s => ({
+      ...s,
+      seed: newSeed,
+      status: 'queued' as GenerationStatus,
+      progress: 0,
+      stageText: 'Queued' as StageText,
+    }));
+
+    setShots(shotsWithSeed);
     setStoryboardId(`sb-${Date.now()}`);
-    runGenerationPipeline(newShots);
+    generateShotsReal(shotsWithSeed, newSeed);
   };
 
-  // Regenerate only unlocked shots with rotated variety (Fix 1 & 2)
+  // Regenerate only unlocked shots with a new sequence seed
   const handleRegenerateUnlocked = () => {
-    const updated = shots.map((s) => {
+    const newSeed = Math.floor(Math.random() * 1000000);
+    setMasterSeed(newSeed);
+
+    const updatedShots = shots.map((s) => {
       if (s.locked) return s;
-      // Rotate asset within the selected genre look, ensuring a new output
-      const newAsset = rotateAssetForShot(s.resultAssetId, selectedStyle.genre, s.shotType);
       return {
         ...s,
-        resultAssetId: newAsset.id,
+        seed: newSeed,
         status: 'queued' as GenerationStatus,
         progress: 0,
         stageText: 'Queued' as StageText,
       };
     });
-    setShots(updated);
-    runGenerationPipeline(updated);
+
+    setShots(updatedShots);
+    generateShotsReal(updatedShots, newSeed);
   };
 
-  // Regenerate a single specific shot with rotation variety (Fix 1 & 2)
-  const handleRegenerateSingleShot = async (shotId: string) => {
+  // Regenerate a single specific shot with a new random seed
+  const handleRegenerateSingleShot = (shotId: string) => {
     const targetShot = shots.find((s) => s.id === shotId);
     if (!targetShot) return;
 
-    // Pick rotated asset within the SAME genre look (never same output twice in a row)
-    const newAsset = rotateAssetForShot(targetShot.resultAssetId, selectedStyle.genre, targetShot.shotType);
+    const newShotSeed = Math.floor(Math.random() * 1000000);
+    const shotTypeKey = targetShot.shotType.includes('Wide') ? 'wide' :
+                        targetShot.shotType.includes('Medium') ? 'medium' : 'closeup';
 
-    // Set to queued
-    setShots((prev) =>
-      prev.map((s) => (s.id === shotId ? { 
-        ...s, 
-        resultAssetId: newAsset.id,
-        status: 'queued', 
-        progress: 10, 
-        stageText: 'Queued' 
-      } : s))
+    setShots(prev => prev.map(s => s.id === shotId ? {
+      ...s,
+      seed: newShotSeed,
+      status: 'queued',
+      progress: 0,
+      stageText: 'Queued',
+    } : s));
+
+    GenerationEngine.simulateGeneration(
+      {
+        id: targetShot.id,
+        prompt: targetShot.prompt,
+        styleId: selectedStyle.id,
+        modelId: 'cinemotion-v3',
+        aspectRatio,
+        cameraMotion: targetShot.cameraMotion,
+        durationSec: targetShot.durationSec || 5,
+        seed: newShotSeed,
+        shotType: shotTypeKey,
+      },
+      {
+        onProgress: (progress: number, stage: StageText) => {
+          setShots(prev => prev.map(s => s.id === shotId ? {
+            ...s,
+            progress,
+            stageText: stage,
+            status: (stage === 'Queued' || stage === 'Waiting for your turn') ? 'queued' : 'rendering',
+          } : s));
+        },
+        onSuccess: (completedGen) => {
+          setShots(prev => {
+            const updated = prev.map(s => s.id === shotId ? {
+              ...s,
+              status: 'done' as GenerationStatus,
+              progress: 100,
+              stageText: 'Completed' as StageText,
+              imageUrl: completedGen.imageUrl,
+              seed: completedGen.seed,
+              isFallback: completedGen.isFallback,
+              fallbackReason: completedGen.fallbackReason,
+              resultAssetId: completedGen.resultAssetId,
+            } : s);
+            handleSaveToHistory(updated);
+            return updated;
+          });
+        },
+        onError: (failedGen, errorMsg) => {
+          setShots(prev => prev.map(s => s.id === shotId ? {
+            ...s,
+            status: 'failed' as GenerationStatus,
+            errorMessage: errorMsg || failedGen.errorMessage,
+          } : s));
+        },
+      }
     );
-
-    // Simulate rendering stages
-    await new Promise((r) => setTimeout(r, 500));
-    setShots((prev) =>
-      prev.map((s) => (s.id === shotId ? { ...s, status: 'rendering', progress: 55, stageText: 'Rendering' } : s))
-    );
-
-    await new Promise((r) => setTimeout(r, 700));
-    setShots((prev) =>
-      prev.map((s) => (s.id === shotId ? { ...s, status: 'rendering', progress: 90, stageText: 'Finishing' } : s))
-    );
-
-    await new Promise((r) => setTimeout(r, 400));
-    setShots((prev) => {
-      const updated = prev.map((s) =>
-        s.id === shotId ? { 
-          ...s, 
-          resultAssetId: newAsset.id,
-          status: 'done' as GenerationStatus, 
-          progress: 100, 
-          stageText: 'Completed' as StageText 
-        } : s
-      );
-      handleSaveToHistory(updated);
-      return updated;
-    });
   };
 
   // Update prompt inline
@@ -199,7 +282,7 @@ export const StoryboardPage: React.FC = () => {
     );
   };
 
-  // Change shot duration (Fix 3)
+  // Change shot duration
   const handleChangeDuration = (shotId: string, durationSec: number) => {
     setShots((prev) =>
       prev.map((s) => (s.id === shotId ? { ...s, durationSec } : s))
@@ -235,10 +318,22 @@ export const StoryboardPage: React.FC = () => {
     setIdea(sug.idea);
     const matchedStyle = STYLE_PRESETS.find((s: StylePreset) => s.id === sug.styleId) || STYLE_PRESETS[0];
     setSelectedStyle(matchedStyle);
-    const newShots = deconstructIdeaIntoShots(sug.idea, matchedStyle);
-    setShots(newShots);
+
+    const newSeed = Math.floor(Math.random() * 1000000);
+    setMasterSeed(newSeed);
+
+    const initialShots = deconstructIdeaIntoShots(sug.idea, matchedStyle);
+    const shotsWithSeed = initialShots.map(s => ({
+      ...s,
+      seed: newSeed,
+      status: 'queued' as GenerationStatus,
+      progress: 0,
+      stageText: 'Queued' as StageText,
+    }));
+
+    setShots(shotsWithSeed);
     setStoryboardId(`sb-${Date.now()}`);
-    runGenerationPipeline(newShots);
+    generateShotsReal(shotsWithSeed, newSeed);
   };
 
   const hasShots = shots.length > 0;
@@ -254,16 +349,19 @@ export const StoryboardPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight">
-              3-Shot Storyboard
+              3-Shot Storyboard Engine
             </h1>
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-cine-amber/20 text-cine-amber border border-cine-amber/40 shadow-amber-sm">
+              Synchronized Multi-Angle Stills
+            </span>
           </div>
           <p className="text-sm text-text-muted mt-1">
-            Build a synchronized 3-shot sequence (Wide Establishing, Medium Subject, Close-Up Detail) with matching look.
+            Transform a single creative premise into a 3-shot sequence (Wide Establishing, Medium Subject, Close-Up Detail) with shared seed coherency.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <PrototypeBadge variant="subtle" />
+          <PrototypeBadge variant="prominent" />
         </div>
       </div>
 
@@ -339,15 +437,15 @@ export const StoryboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowPlayerModal(!showPlayerModal)}
-                className="px-4 py-2 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-transform hover:scale-105"
+                className="px-4 py-2 rounded-xl bg-cine-amber hover:bg-cine-amber-hover text-surface-obsidian text-xs font-bold flex items-center gap-1.5 shadow-amber-md transition-transform hover:scale-105"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
-                <span>{showPlayerModal ? 'Hide Sequence' : 'Play Sequence'}</span>
+                <span>{showPlayerModal ? 'Hide Master Theater' : 'Play Sequence'}</span>
               </button>
             </div>
           </div>
 
-          {/* Master Theater Player View (Inline or toggled) */}
+          {/* Master Theater Player View */}
           {showPlayerModal && (
             <div className="animate-fadeIn">
               <SequencePlayer
@@ -398,10 +496,10 @@ export const StoryboardPage: React.FC = () => {
             <Info className="w-4 h-4 text-cine-amber shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-text-primary">
-                Aesthetic & Sequence Continuity Note:
+                Live Generation & Narrative Continuity:
               </p>
               <p className="mt-0.5">
-                All 3 shots are rendered in synchronized "{selectedStyle.name}" ({selectedStyle.genre}) color palettes and matching environmental lighting. Shots showcase matched atmospheric tone and location staging across Wide, Medium, and Close-up perspectives without falsely asserting identical human actors.
+                All 3 shots are generated with synchronized seed #{masterSeed} in "{selectedStyle.name}" styling. Requests are spaced through a client-side queue to respect public rate limits.
               </p>
             </div>
           </div>

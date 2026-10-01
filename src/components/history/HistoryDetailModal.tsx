@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   X, 
   RotateCcw, 
@@ -8,7 +8,9 @@ import {
   Trash2, 
   Star, 
   Film, 
-  Layers 
+  Layers,
+  AlertCircle,
+  Hash
 } from 'lucide-react';
 import { SingleGeneration, Storyboard } from '../../types';
 import { SAMPLE_ASSETS } from '../../data/assets';
@@ -30,11 +32,15 @@ export const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
   onDelete,
   onReusePrompt,
 }) => {
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
-  // Accessible Esc key listener & focus trapping
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -76,9 +82,22 @@ export const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
     ? (STYLE_PRESETS.find(s => s.id === storyboard.stylePresetId) || STYLE_PRESETS[0])
     : null;
 
+  const getCameraAnimationClass = () => {
+    if (prefersReducedMotion || !singleGen) return '';
+    switch (singleGen.cameraMotion) {
+      case 'pan_right': return 'animate-camera-pan';
+      case 'tilt_up': return 'animate-camera-tilt';
+      case 'orbit_cw': return 'animate-camera-orbit';
+      case 'dolly_in': return 'animate-camera-dolly';
+      case 'zoom_in': return 'animate-camera-zoom';
+      case 'handheld': return 'animate-camera-handheld';
+      default: return '';
+    }
+  };
+
   const handleCopyRecipe = () => {
     if (singleGen) {
-      const recipe = `🎬 CineFlow AI Recipe:\nPrompt: "${singleGen.prompt}"\nStyle: ${singleStyle?.name || 'Custom'}\nCamera: ${singleCamera?.label || 'Static'}\nAspect: ${singleGen.aspectRatio} | Duration: ${singleGen.durationSec}s`;
+      const recipe = `🎬 CineFlow AI Recipe:\nPrompt: "${singleGen.prompt}"\nStyle: ${singleStyle?.name || 'Custom'}\nCamera: ${singleCamera?.label || 'Static'}\nSeed: ${singleGen.seed || 'random'}\nAspect: ${singleGen.aspectRatio} | Duration: ${singleGen.durationSec}s`;
       navigator.clipboard.writeText(recipe);
     } else if (storyboard) {
       let sbRecipe = `🎬 CineFlow 3-Shot Storyboard Recipe:\nIdea: "${storyboard.masterIdea}"\nStyle: ${sbStyle?.name}\n\n`;
@@ -92,16 +111,24 @@ export const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
   };
 
   const handleDownload = () => {
-    if (singleAsset?.videoUrl) {
+    const downloadUrl = (!imageError && singleGen?.imageUrl)
+      ? singleGen.imageUrl
+      : (singleAsset?.posterUrl || singleAsset?.svgFallback);
+
+    if (downloadUrl) {
       const a = document.createElement('a');
-      a.href = singleAsset.videoUrl;
-      a.download = `cineflow-${item.id}.mp4`;
+      a.href = downloadUrl;
+      a.download = `cineflow-${item.id}.jpg`;
       a.target = '_blank';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     }
   };
+
+  const displaySingleImageSrc = (!imageError && singleGen?.imageUrl)
+    ? singleGen.imageUrl
+    : (singleAsset?.posterUrl || singleAsset?.svgFallback);
 
   return (
     <div
@@ -125,7 +152,7 @@ export const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
             </span>
             <div>
               <h2 id="modal-title" className="text-base sm:text-lg font-bold text-text-primary">
-                {isStoryboard ? '3-Shot Storyboard Detail' : 'Single Shot Detail'}
+                {isStoryboard ? '3-Shot Storyboard Detail' : 'Creation Detail'}
               </h2>
               <span className="text-xs text-text-muted">
                 Created {new Date(item.createdAt).toLocaleDateString()} at {new Date(item.createdAt).toLocaleTimeString()}
@@ -172,27 +199,24 @@ export const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
                 aspectRatio={storyboard.aspectRatio}
               />
             </div>
-          ) : singleGen && singleAsset ? (
-            <div className="rounded-xl overflow-hidden border border-cine-border bg-surface-obsidian aspect-video w-full relative">
-              {singleAsset.videoUrl ? (
-                <video
-                  src={singleAsset.videoUrl}
-                  poster={singleAsset.posterUrl || singleAsset.svgFallback}
-                  controls
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                  style={{ objectFit: 'cover' }}
-                />
-              ) : (
-                <img
-                  src={singleAsset.posterUrl || singleAsset.svgFallback}
-                  alt={singleAsset.title}
-                  className="w-full h-full object-cover"
-                  style={{ objectFit: 'cover' }}
-                />
+          ) : singleGen ? (
+            <div className="rounded-xl overflow-hidden border border-cine-border bg-surface-obsidian aspect-video w-full relative flex items-center justify-center">
+              <img
+                src={displaySingleImageSrc}
+                alt={singleGen.prompt}
+                onError={() => setImageError(true)}
+                className={`w-full h-full object-cover ${getCameraAnimationClass()}`}
+                style={{ 
+                  objectFit: 'cover',
+                  animationDuration: `${singleGen.durationSec || 5}s`
+                }}
+              />
+              {/* Fallback Notice Badge if applicable */}
+              {singleGen.isFallback && (
+                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-amber-950/90 backdrop-blur border border-cine-amber/60 text-xs font-bold text-cine-amber flex items-center gap-1 shadow-lg">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>Sample shown: live generation unavailable</span>
+                </div>
               )}
             </div>
           ) : null}
@@ -232,9 +256,10 @@ export const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
               </div>
 
               <div className="p-3 rounded-xl bg-surface-raised border border-cine-border">
-                <span className="text-[10px] uppercase font-bold text-text-muted">Duration</span>
-                <p className="text-xs font-bold text-text-primary mt-0.5">
-                  {isStoryboard ? `${storyboard?.shots.reduce((acc, s) => acc + (s.durationSec || 5), 0)}s Reel` : `${singleGen?.durationSec}s Master`}
+                <span className="text-[10px] uppercase font-bold text-text-muted">Seed</span>
+                <p className="text-xs font-bold text-text-primary mt-0.5 flex items-center gap-0.5">
+                  <Hash className="w-3 h-3 text-cine-amber" />
+                  <span>{isStoryboard ? storyboard?.seed || 'multi' : singleGen?.seed || 'random'}</span>
                 </p>
               </div>
             </div>
@@ -287,16 +312,14 @@ export const HistoryDetailModal: React.FC<HistoryDetailModalProps> = ({
               <span>{copied ? 'Copied!' : 'Copy Recipe'}</span>
             </button>
 
-            {singleAsset?.videoUrl && (
-              <button
-                type="button"
-                onClick={handleDownload}
-                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-surface-raised hover:bg-surface-hover border border-cine-border text-xs font-bold text-text-primary flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <Download className="w-3.5 h-3.5 text-text-muted" />
-                <span>Download</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-surface-raised hover:bg-surface-hover border border-cine-border text-xs font-bold text-text-primary flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5 text-text-muted" />
+              <span>Download Still</span>
+            </button>
 
             <button
               type="button"

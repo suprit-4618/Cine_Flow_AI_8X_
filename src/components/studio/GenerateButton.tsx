@@ -50,7 +50,7 @@ export const GenerateButton: React.FC<GenerateButtonProps> = ({ onClick, isGener
           ) : (
             <>
               <Clapperboard className="w-4 h-4 text-obsidian" />
-              <span>Generate Video</span>
+              <span>Generate</span>
               <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-obsidian/20 text-obsidian font-semibold">
                 {calculatedCost}T
               </span>

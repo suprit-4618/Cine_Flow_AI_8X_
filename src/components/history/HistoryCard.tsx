@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Star, 
   Trash2, 
   RotateCcw, 
   Layers, 
   Film, 
-  Clock 
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 import { SingleGeneration, Storyboard } from '../../types';
 import { SAMPLE_ASSETS } from '../../data/assets';
@@ -27,6 +28,7 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
   onDelete,
   onReusePrompt,
 }) => {
+  const [imageError, setImageError] = useState(false);
   const isStoryboard = 'shots' in item;
 
   // Single Generation
@@ -43,14 +45,23 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
   const sbStyle = storyboard 
     ? (STYLE_PRESETS.find(s => s.id === storyboard.stylePresetId) || STYLE_PRESETS[0])
     : null;
-  const firstShotAsset = storyboard?.shots[0] 
-    ? getAssetForShot(storyboard.shots[0], storyboard.genre)
+  const firstShot = storyboard?.shots[0];
+  const firstShotAsset = firstShot 
+    ? getAssetForShot(firstShot, storyboard.genre)
     : SAMPLE_ASSETS[0];
 
   const aspectClass = 
     item.aspectRatio === '9:16' ? 'aspect-[9/16]' :
     item.aspectRatio === '1:1' ? 'aspect-square' :
     'aspect-video';
+
+  const singleImageSrc = (!imageError && singleGen?.imageUrl)
+    ? singleGen.imageUrl
+    : (singleAsset?.posterUrl || singleAsset?.svgFallback);
+
+  const storyboardFirstImageSrc = (!imageError && firstShot?.imageUrl)
+    ? firstShot.imageUrl
+    : (firstShotAsset.posterUrl || firstShotAsset.svgFallback);
 
   return (
     <div className="rounded-2xl bg-surface-dark border border-cine-border hover:border-cine-amber/50 transition-all duration-300 overflow-hidden shadow-lg flex flex-col justify-between group hover:shadow-amber-sm">
@@ -62,8 +73,9 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
         {isStoryboard && storyboard ? (
           <div className="w-full h-full relative">
             <img
-              src={firstShotAsset.posterUrl || firstShotAsset.svgFallback}
+              src={storyboardFirstImageSrc}
               alt={storyboard.title}
+              onError={() => setImageError(true)}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               style={{ objectFit: 'cover' }}
             />
@@ -71,10 +83,11 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
             <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-surface-obsidian via-surface-obsidian/70 to-transparent flex items-center gap-1.5">
               {storyboard.shots.map((shot, idx) => {
                 const a = getAssetForShot(shot, storyboard.genre);
+                const shotSrc = shot.imageUrl || a.posterUrl || a.svgFallback;
                 return (
                   <div key={shot.id} className="flex-1 h-8 rounded-md overflow-hidden border border-white/20 relative">
                     <img 
-                      src={a.posterUrl || a.svgFallback} 
+                      src={shotSrc} 
                       alt={`Shot ${idx + 1}`} 
                       className="w-full h-full object-cover" 
                       style={{ objectFit: 'cover' }}
@@ -87,11 +100,12 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
               })}
             </div>
           </div>
-        ) : singleAsset ? (
+        ) : singleGen ? (
           <div className="w-full h-full relative">
             <img
-              src={singleAsset.posterUrl || singleAsset.svgFallback}
-              alt={singleAsset.title}
+              src={singleImageSrc}
+              alt={singleGen.prompt}
+              onError={() => setImageError(true)}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               style={{ objectFit: 'cover' }}
             />
@@ -104,6 +118,12 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
             {isStoryboard ? <Layers className="w-3 h-3" /> : <Film className="w-3 h-3" />}
             <span>{isStoryboard ? '3-Shot Storyboard' : 'Single Shot'}</span>
           </span>
+          {singleGen?.isFallback && (
+            <span className="px-1.5 py-0.5 rounded-md bg-amber-950/90 border border-cine-amber/60 text-[9px] font-bold text-cine-amber flex items-center gap-0.5">
+              <AlertCircle className="w-2.5 h-2.5" />
+              <span>Sample</span>
+            </span>
+          )}
           <span className="px-1.5 py-0.5 rounded-md bg-surface-obsidian/80 backdrop-blur-md border border-cine-border text-[10px] text-text-muted">
             {item.aspectRatio}
           </span>

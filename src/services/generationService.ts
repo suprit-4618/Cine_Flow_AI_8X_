@@ -11,6 +11,8 @@ export interface GenerationRequest {
   aspectRatio: AspectRatio;
   cameraMotion: CameraMotion;
   durationSec: number;
+  seed?: number;
+  shotType?: 'wide' | 'medium' | 'closeup' | 'standalone';
 }
 
 export interface ActiveJob {
@@ -20,19 +22,56 @@ export interface ActiveJob {
   cancel: () => void;
 }
 
-export class GenerationEngine {
-  private static activeJobsMap = new Map<string, { timerId: NodeJS.Timeout | number; cancelled: boolean }>();
+interface QueuedTask {
+  id: string;
+  req: GenerationRequest;
+  initialGen: SingleGeneration;
+  callbacks: {
+    onProgress: (progress: number, stage: StageText, elapsedSec: number) => void;
+    onSuccess: (completedGen: SingleGeneration) => void;
+    onError: (failedGen: SingleGeneration, errorMessage: string) => void;
+  };
+  cancelled: boolean;
+  cancel: () => void;
+}
 
-  /**
-   * Deterministically generates a unique ID or uses existing.
-   */
+export class GenerationEngine {
+  private static taskQueue: QueuedTask[] = [];
+  private static isProcessingQueue = false;
+  private static activeJobsMap = new Map<string, QueuedTask>();
+
   public static createJobId(): string {
     return 'gen-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 6);
   }
 
+  public static getDimensions(aspectRatio: AspectRatio): { width: number; height: number } {
+    switch (aspectRatio) {
+      case '9:16':
+        return { width: 720, height: 1280 };
+      case '1:1':
+        return { width: 1024, height: 1024 };
+      case '16:9':
+      default:
+        return { width: 1280, height: 720 };
+    }
+  }
+
+  public static buildPollinationsUrl(
+    prompt: string,
+    styleId: string,
+    aspectRatio: AspectRatio,
+    seed: number
+  ): { url: string; fullPrompt: string; width: number; height: number; seed: number } {
+    const style = STYLE_PRESETS.find(s => s.id === styleId) || STYLE_PRESETS[0];
+    const fullPrompt = `${prompt.trim()}, ${style.promptSuffix}`;
+    const { width, height } = this.getDimensions(aspectRatio);
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=${width}&height=${height}&seed=${seed}&nologo=true`;
+    return { url, fullPrompt, width, height, seed };
+  }
+
   /**
-   * Simulates generation following the state machine:
-   * idle -> queued (1-2s) -> rendering (4-6s) -> done / failed
+   * Main generation entry point.
+   * Places request in a sequential, rate-limited queue and executes one at a time.
    */
   public static simulateGeneration(
     req: GenerationRequest,
@@ -41,14 +80,10 @@ export class GenerationEngine {
       onSuccess: (completedGen: SingleGeneration) => void;
       onError: (failedGen: SingleGeneration, errorMessage: string) => void;
     },
-    isRetry = false
+    _isRetry = false
   ): { jobId: string; cancel: () => void } {
     const jobId = req.id || this.createJobId();
-    const style = STYLE_PRESETS.find(s => s.id === req.styleId) || STYLE_PRESETS[0];
-
-    // Check session counter for deterministic 1st-try success
-    const currentAttemptCount = StorageService.loadState().generationCount || 0;
-    const willFail = !isRetry && currentAttemptCount > 0 && Math.random() < 0.10;
+    const seed = req.seed !== undefined ? req.seed : Math.floor(Math.random() * 1000000);
 
     const initialGen: SingleGeneration = {
       id: jobId,
@@ -58,6 +93,8 @@ export class GenerationEngine {
       aspectRatio: req.aspectRatio,
       cameraMotion: req.cameraMotion,
       durationSec: req.durationSec,
+      mediaType: 'image',
+      seed,
       status: 'queued',
       progress: 0,
       stageText: 'Queued',
@@ -65,87 +102,157 @@ export class GenerationEngine {
       isFavorite: false,
     };
 
-    let cancelled = false;
-    let elapsed = 0;
-    const startTime = Date.now();
-
-    const jobRecord = { timerId: 0 as any, cancelled: false };
-    this.activeJobsMap.set(jobId, jobRecord);
-
-    const cancel = () => {
-      cancelled = true;
-      jobRecord.cancelled = true;
-      clearTimeout(jobRecord.timerId);
-      this.activeJobsMap.delete(jobId);
+    const task: QueuedTask = {
+      id: jobId,
+      req: { ...req, seed },
+      initialGen,
+      callbacks,
+      cancelled: false,
+      cancel: () => {
+        task.cancelled = true;
+        this.activeJobsMap.delete(jobId);
+        this.taskQueue = this.taskQueue.filter(t => t.id !== jobId);
+      },
     };
 
-    // Stage 1: Queued (1.2 seconds)
-    callbacks.onProgress(0, 'Queued', 0);
+    this.activeJobsMap.set(jobId, task);
+    this.taskQueue.push(task);
 
-    const queueDurationMs = 1200;
-    const renderDurationMs = Math.max(3500, req.durationSec * 600); // 3.5s - 5.5s
-    const totalSteps = 40;
-    const stepIntervalMs = renderDurationMs / totalSteps;
+    // Initial queued notification
+    callbacks.onProgress(0, this.taskQueue.length > 1 ? 'Waiting for your turn' : 'Queued', 0);
 
-    jobRecord.timerId = setTimeout(() => {
-      if (cancelled) return;
+    // Trigger queue runner
+    this.processNextInQueue();
 
-      // Stage 2: Rendering (0% to 95%)
-      let step = 0;
-      const renderInterval = setInterval(() => {
-        if (cancelled) {
-          clearInterval(renderInterval);
-          return;
+    return { jobId, cancel: task.cancel };
+  }
+
+  private static processNextInQueue(): void {
+    if (this.isProcessingQueue || this.taskQueue.length === 0) {
+      return;
+    }
+
+    const currentTask = this.taskQueue.shift();
+    if (!currentTask || currentTask.cancelled) {
+      this.processNextInQueue();
+      return;
+    }
+
+    this.isProcessingQueue = true;
+    this.executeImageGeneration(currentTask)
+      .finally(() => {
+        // Space sequential requests by 800ms to respect rate limits
+        setTimeout(() => {
+          this.isProcessingQueue = false;
+          this.processNextInQueue();
+        }, 800);
+      });
+  }
+
+  private static async executeImageGeneration(task: QueuedTask): Promise<void> {
+    const { req, initialGen, callbacks } = task;
+    const style = STYLE_PRESETS.find(s => s.id === req.styleId) || STYLE_PRESETS[0];
+    const seed = req.seed || Math.floor(Math.random() * 1000000);
+    const { url } = this.buildPollinationsUrl(req.prompt, req.styleId, req.aspectRatio, seed);
+
+    const startTime = Date.now();
+    let elapsed = 0;
+    callbacks.onProgress(10, 'Rendering', 0);
+
+    // Progress tick interval while network request is pending
+    const progressInterval = setInterval(() => {
+      if (task.cancelled) {
+        clearInterval(progressInterval);
+        return;
+      }
+      elapsed = Math.floor((Date.now() - startTime) / 1000);
+      // Smoothly advance progress up to 92%
+      callbacks.onProgress(Math.min(92, 10 + elapsed * 15), 'Rendering', elapsed);
+    }, 400);
+
+    try {
+      // Load image with 45s hard timeout
+      await this.loadImageWithTimeout(url, 45000);
+
+      clearInterval(progressInterval);
+      if (task.cancelled) return;
+
+      callbacks.onProgress(98, 'Finishing', elapsed);
+
+      const completedGen: SingleGeneration = {
+        ...initialGen,
+        status: 'done',
+        progress: 100,
+        stageText: 'Completed',
+        imageUrl: url,
+        seed,
+        isFallback: false,
+      };
+
+      StorageService.incrementGenerationCount();
+      StorageService.saveGeneration(completedGen);
+      this.activeJobsMap.delete(task.id);
+      callbacks.onSuccess(completedGen);
+
+    } catch (error) {
+      clearInterval(progressInterval);
+      if (task.cancelled) return;
+
+      // Failure fallback: on timeout, error, or rate limit, fall back to closest sample clip
+      console.warn('[GenerationEngine] Live image generation failed or timed out. Falling back to sample clip.', error);
+
+      const fallbackAsset = matchAssetForPrompt(req.prompt, style.genre, req.shotType || 'wide');
+      const completedFallbackGen: SingleGeneration = {
+        ...initialGen,
+        status: 'done',
+        progress: 100,
+        stageText: 'Completed',
+        resultAssetId: fallbackAsset.id,
+        imageUrl: fallbackAsset.posterUrl || fallbackAsset.svgFallback,
+        seed,
+        isFallback: true,
+        fallbackReason: 'Live generation unavailable (sample fallback shown)',
+      };
+
+      StorageService.incrementGenerationCount();
+      StorageService.saveGeneration(completedFallbackGen);
+      this.activeJobsMap.delete(task.id);
+      callbacks.onSuccess(completedFallbackGen);
+    }
+  }
+
+  private static loadImageWithTimeout(url: string, timeoutMs: number): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      // In non-browser (test) environment, resolve immediately
+      if (typeof window === 'undefined' || typeof Image === 'undefined') {
+        resolve({} as HTMLImageElement);
+        return;
+      }
+
+      const img = new Image();
+      let timedOut = false;
+
+      const timer = setTimeout(() => {
+        timedOut = true;
+        img.src = '';
+        reject(new Error(`Image generation timed out after ${timeoutMs / 1000}s`));
+      }, timeoutMs);
+
+      img.onload = () => {
+        if (!timedOut) {
+          clearTimeout(timer);
+          resolve(img);
         }
+      };
 
-        step++;
-        elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const progress = Math.min(95, Math.round((step / totalSteps) * 95));
-        callbacks.onProgress(progress, 'Rendering', elapsed);
-
-        if (step >= totalSteps) {
-          clearInterval(renderInterval);
-
-          if (willFail) {
-            // Simulated 10% failure condition
-            StorageService.incrementGenerationCount();
-            const failedGen: SingleGeneration = {
-              ...initialGen,
-              status: 'failed',
-              progress: 88,
-              stageText: 'Error',
-              errorMessage: 'Simulated GPU cluster timeout. Please click Retry.',
-            };
-            this.activeJobsMap.delete(jobId);
-            callbacks.onError(failedGen, failedGen.errorMessage!);
-          } else {
-            // Stage 3: Finishing (95% to 100%)
-            callbacks.onProgress(98, 'Finishing', elapsed);
-
-            jobRecord.timerId = setTimeout(() => {
-              if (cancelled) return;
-
-              // Match deterministic asset
-              const matchedAsset = matchAssetForPrompt(req.prompt, style.genre, 'wide');
-              StorageService.incrementGenerationCount();
-
-              const completedGen: SingleGeneration = {
-                ...initialGen,
-                status: 'done',
-                progress: 100,
-                stageText: 'Completed',
-                resultAssetId: matchedAsset.id,
-              };
-
-              StorageService.saveGeneration(completedGen);
-              this.activeJobsMap.delete(jobId);
-              callbacks.onSuccess(completedGen);
-            }, 600);
-          }
+      img.onerror = (err) => {
+        if (!timedOut) {
+          clearTimeout(timer);
+          reject(err || new Error('Failed to load image from service'));
         }
-      }, stepIntervalMs);
-    }, queueDurationMs);
+      };
 
-    return { jobId, cancel };
+      img.src = url;
+    });
   }
 }

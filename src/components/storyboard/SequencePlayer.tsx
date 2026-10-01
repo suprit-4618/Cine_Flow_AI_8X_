@@ -9,7 +9,10 @@ import {
   Copy, 
   Check, 
   Film, 
-  Layers 
+  Layers,
+  Camera,
+  AlertCircle,
+  Hash
 } from 'lucide-react';
 import { StoryboardShot, StylePreset, AspectRatio } from '../../types';
 import { getAssetForShot, formatStoryboardRecipe } from '../../utils/storyboardHelper';
@@ -33,16 +36,34 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
   const [isLooping, setIsLooping] = useState(true);
   const [copiedRecipe, setCopiedRecipe] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [imageError, setImageError] = useState(false);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const currentShot = shots[activeShotIndex] || shots[0];
   const currentTargetDuration = currentShot?.durationSec || 5;
   const currentAsset = getAssetForShot(currentShot, stylePreset.genre);
 
+  const getCameraAnimationClass = () => {
+    if (prefersReducedMotion) return '';
+    switch (currentShot?.cameraMotion) {
+      case 'pan_right': return 'animate-camera-pan';
+      case 'tilt_up': return 'animate-camera-tilt';
+      case 'orbit_cw': return 'animate-camera-orbit';
+      case 'dolly_in': return 'animate-camera-dolly';
+      case 'zoom_in': return 'animate-camera-zoom';
+      case 'handheld': return 'animate-camera-handheld';
+      default: return '';
+    }
+  };
+
   // Auto-advance logic
   const advanceToNextShot = () => {
+    setImageError(false);
     if (activeShotIndex < shots.length - 1) {
       setActiveShotIndex(prev => prev + 1);
       setCurrentTime(0);
@@ -56,6 +77,7 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
   };
 
   const handlePrevShot = () => {
+    setImageError(false);
     if (activeShotIndex > 0) {
       setActiveShotIndex(prev => prev - 1);
     } else {
@@ -68,64 +90,24 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
     advanceToNextShot();
   };
 
-  // Video timeupdate tracking trimmed strictly to stated shot duration (Fix 3)
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      const t = videoRef.current.currentTime;
-      setCurrentTime(t);
-
-      // If video playback reaches or exceeds shot's stated duration, cut immediately to next shot
-      if (t >= currentTargetDuration) {
-        advanceToNextShot();
-      }
-    }
-  };
-
-  // Video ended -> cut to next shot
-  const handleVideoEnded = () => {
-    advanceToNextShot();
-  };
-
-  // Reset video position and maintain play state when activeShotIndex changes
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0;
-      setCurrentTime(0);
-      if (isPlaying) {
-        videoRef.current.play().catch(() => {});
-      }
-    }
-  }, [activeShotIndex]);
-
-  // Play/Pause toggle effect
-  useEffect(() => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.play().catch(() => {});
-      } else {
-        videoRef.current.pause();
-      }
-    }
-  }, [isPlaying]);
-
-  // Fallback timer if video is not available
+  // Continuous timer advancing shots with duration trimming & crossfade
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (isPlaying && (!currentAsset.videoUrl || currentShot.status !== 'done')) {
-      const tick = 100; // ms
+    if (isPlaying) {
+      const tickMs = 100;
       timer = setInterval(() => {
         setCurrentTime(prev => {
-          const next = prev + tick / 1000;
+          const next = prev + tickMs / 1000;
           if (next >= currentTargetDuration) {
             advanceToNextShot();
             return 0;
           }
           return next;
         });
-      }, tick);
+      }, tickMs);
     }
     return () => clearInterval(timer);
-  }, [isPlaying, activeShotIndex, currentAsset.videoUrl, currentShot.status, currentTargetDuration]);
+  }, [isPlaying, activeShotIndex, currentTargetDuration, isLooping, shots.length]);
 
   const handleCopyRecipe = () => {
     const text = formatStoryboardRecipe(
@@ -149,11 +131,14 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
     }
   };
 
-  // Fix 5: Ensure 9:16 and 1:1 have strict aspect containers and object-fit: cover
   const aspectClass = 
     aspectRatio === '9:16' ? 'w-[280px] sm:w-[320px] aspect-[9/16]' :
     aspectRatio === '1:1' ? 'w-[320px] sm:w-[420px] aspect-square' :
     'w-full max-w-4xl aspect-video';
+
+  const displayImageSrc = (!imageError && currentShot?.imageUrl)
+    ? currentShot.imageUrl
+    : (currentAsset.posterUrl || currentAsset.svgFallback);
 
   return (
     <div className="rounded-2xl bg-surface-dark border border-cine-border overflow-hidden shadow-2xl space-y-0">
@@ -169,7 +154,7 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
                 Master Theater Sequence
               </h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cine-amber/20 text-cine-amber border border-cine-amber/40">
-                Continuous Reel
+                Continuous Stills Reel
               </span>
             </div>
             <p className="text-xs text-text-muted truncate max-w-md">
@@ -204,58 +189,57 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
         </div>
       </div>
 
-      {/* Main Theater Display Container with object-fit: cover */}
+      {/* Main Theater Display Container: Looping CSS Camera Move on Stills with Smooth Transition */}
       <div 
         ref={containerRef}
         className="relative bg-surface-obsidian flex items-center justify-center p-3 sm:p-6 min-h-[340px] sm:min-h-[480px]"
       >
         <div className={`relative mx-auto rounded-xl overflow-hidden shadow-2xl border border-cine-border/60 ${aspectClass}`}>
-          {currentShot.status === 'done' ? (
-            <video
-              key={`${currentShot.id}-${currentAsset.id}`}
-              ref={videoRef}
-              src={currentAsset.videoUrl}
-              poster={currentAsset.posterUrl || currentAsset.svgFallback}
-              autoPlay={isPlaying}
-              muted
-              playsInline
-              onTimeUpdate={handleTimeUpdate}
-              onEnded={handleVideoEnded}
-              className="w-full h-full object-cover"
-              style={{ objectFit: 'cover' }}
+          <div className="w-full h-full relative overflow-hidden flex items-center justify-center">
+            <img
+              key={currentShot?.id || activeShotIndex}
+              src={displayImageSrc}
+              alt={currentShot?.shotType || 'Storyboard shot'}
+              onError={() => setImageError(true)}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${getCameraAnimationClass()}`}
+              style={{ 
+                objectFit: 'cover',
+                animationDuration: `${currentTargetDuration}s`
+              }}
             />
-          ) : (
-            <div className="w-full h-full relative">
-              <img
-                src={currentAsset.posterUrl || currentAsset.svgFallback}
-                alt={currentShot.shotType}
-                className="w-full h-full object-cover"
-                style={{ objectFit: 'cover' }}
-              />
-              <div className="absolute inset-0 bg-surface-obsidian/60 backdrop-blur-xs flex items-center justify-center">
-                <span className="text-xs text-text-muted bg-surface-obsidian/80 px-3 py-1.5 rounded-lg border border-cine-border">
-                  {currentShot.stageText || 'Rendering frame...'}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Shot Watermark Overlay */}
-          <div className="absolute top-3 left-3 flex items-center gap-2 bg-surface-obsidian/85 backdrop-blur-md px-3 py-1 rounded-lg border border-cine-border text-xs text-text-primary font-bold">
-            <span className="w-2 h-2 rounded-full bg-cine-amber animate-pulse" />
-            <span>Shot {activeShotIndex + 1}/3: {currentShot.shotType}</span>
           </div>
 
-          {/* Camera Motion Overlay */}
-          <div className="absolute top-3 right-3 bg-surface-obsidian/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-cine-border text-[11px] text-cine-amber font-mono">
-            {currentShot.cameraMotion.replace('_', ' ').toUpperCase()}
+          {/* Shot Watermark Overlay */}
+          <div className="absolute top-3 left-3 flex items-center gap-2 bg-surface-obsidian/85 backdrop-blur-md px-3 py-1 rounded-lg border border-cine-border text-xs text-text-primary font-bold pointer-events-none">
+            <span className="w-2 h-2 rounded-full bg-cine-amber animate-pulse" />
+            <span>Shot {activeShotIndex + 1}/3: {currentShot?.shotType}</span>
+          </div>
+
+          {/* Fallback Notice or Camera Motion Overlay */}
+          <div className="absolute top-3 right-3 flex items-center gap-1.5 pointer-events-none">
+            {currentShot?.isFallback && (
+              <span className="px-2 py-0.5 rounded bg-amber-950/90 border border-cine-amber/60 text-[10px] text-cine-amber font-bold flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                <span>Sample Fallback</span>
+              </span>
+            )}
+            <div className="bg-surface-obsidian/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-cine-border text-[11px] text-cine-amber font-mono flex items-center gap-1">
+              <Camera className="w-3 h-3" />
+              <span>{currentShot?.cameraMotion?.replace('_', ' ').toUpperCase()}</span>
+            </div>
           </div>
 
           {/* Prompt & Trimmed Duration Info */}
-          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-text-muted bg-surface-obsidian/85 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-cine-border">
-            <span className="truncate max-w-[70%]">"{currentShot.prompt}"</span>
-            <span className="font-mono text-text-primary font-bold">
-              {Math.min(currentTime, currentTargetDuration).toFixed(1)}s / {currentTargetDuration.toFixed(1)}s
+          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-text-muted bg-surface-obsidian/85 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-cine-border pointer-events-none">
+            <span className="truncate max-w-[70%]">"{currentShot?.prompt}"</span>
+            <span className="font-mono text-text-primary font-bold flex items-center gap-1.5">
+              {currentShot?.seed !== undefined && (
+                <span className="text-[10px] text-text-muted flex items-center gap-0.5">
+                  <Hash className="w-2.5 h-2.5 text-cine-amber" />
+                  <span>{currentShot.seed}</span>
+                </span>
+              )}
+              <span>{Math.min(currentTime, currentTargetDuration).toFixed(1)}s / {currentTargetDuration.toFixed(1)}s</span>
             </span>
           </div>
         </div>
@@ -332,7 +316,7 @@ export const SequencePlayer: React.FC<SequencePlayerProps> = ({
           </div>
         </div>
 
-        {/* Master Playback Transport Controls (Mute button removed as per Fix 4) */}
+        {/* Master Playback Transport Controls */}
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
             {/* Loop Sequence Toggle */}

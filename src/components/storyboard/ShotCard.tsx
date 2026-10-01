@@ -7,10 +7,9 @@ import {
   ChevronDown, 
   GripVertical, 
   Camera, 
-  CheckCircle2, 
+  Clock, 
   AlertCircle,
-  Clock,
-  ExternalLink
+  Hash
 } from 'lucide-react';
 import { StoryboardShot, CameraMotion, AspectRatio, GenreCategory } from '../../types';
 import { getAssetForShot } from '../../utils/storyboardHelper';
@@ -59,9 +58,27 @@ export const ShotCard: React.FC<ShotCardProps> = ({
 }) => {
   const [isEditingPrompt, setIsEditingPrompt] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState(shot.prompt);
+  const [imageError, setImageError] = useState(false);
 
-  // Fix 2: Strict Look Guarantee — Asset always belongs to the storyboard's selected genre
+  // Check reduced motion
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   const asset = getAssetForShot(shot, expectedGenre);
+
+  const getCameraAnimationClass = () => {
+    if (prefersReducedMotion) return '';
+    switch (shot.cameraMotion) {
+      case 'pan_right': return 'animate-camera-pan';
+      case 'tilt_up': return 'animate-camera-tilt';
+      case 'orbit_cw': return 'animate-camera-orbit';
+      case 'dolly_in': return 'animate-camera-dolly';
+      case 'zoom_in': return 'animate-camera-zoom';
+      case 'handheld': return 'animate-camera-handheld';
+      default: return '';
+    }
+  };
 
   const handleSavePrompt = () => {
     onUpdatePrompt(shot.id, editedPrompt);
@@ -73,11 +90,14 @@ export const ShotCard: React.FC<ShotCardProps> = ({
     setIsEditingPrompt(false);
   };
 
-  // Fix 5: Ensure 9:16 and 1:1 have strict aspect ratio containers and object-fit: cover
   const aspectClass = 
     aspectRatio === '9:16' ? 'aspect-[9/16]' :
     aspectRatio === '1:1' ? 'aspect-square' :
     'aspect-video';
+
+  const displayImageSrc = (!imageError && shot.imageUrl)
+    ? shot.imageUrl
+    : (asset.posterUrl || asset.svgFallback);
 
   return (
     <div 
@@ -154,30 +174,39 @@ export const ShotCard: React.FC<ShotCardProps> = ({
         </button>
       </div>
 
-      {/* Media Preview Container with object-fit: cover */}
+      {/* Media Viewport Container with object-fit: cover and looping CSS camera motion */}
       <div className={`w-full relative bg-surface-obsidian overflow-hidden ${aspectClass}`}>
         {shot.status === 'done' ? (
-          <div className="w-full h-full relative">
-            <video
-              src={asset.videoUrl}
-              poster={asset.posterUrl || asset.svgFallback}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-              style={{ objectFit: 'cover' }}
+          <div className="w-full h-full relative overflow-hidden flex items-center justify-center">
+            <img
+              src={displayImageSrc}
+              alt={shot.prompt}
+              onError={() => setImageError(true)}
+              className={`w-full h-full object-cover transition-transform duration-500 ${getCameraAnimationClass()}`}
+              style={{ 
+                objectFit: 'cover',
+                animationDuration: `${shot.durationSec || 5}s`
+              }}
             />
-            {/* Overlay Badges */}
-            <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-surface-obsidian/85 backdrop-blur-md px-2.5 py-1 rounded-md border border-cine-border/80 text-[10px] text-text-primary font-semibold">
-              <CheckCircle2 className="w-3 h-3 text-cine-emerald" />
-              <span>Ready (720p HD)</span>
+
+            {/* Overlay Status Badge */}
+            <div className="absolute top-2 left-2 flex flex-wrap items-center gap-1.5 pointer-events-none">
+              {shot.isFallback ? (
+                <span className="px-2 py-0.5 rounded-md bg-amber-950/90 backdrop-blur border border-cine-amber/60 text-[10px] font-bold text-cine-amber flex items-center gap-1 shadow-md">
+                  <AlertCircle className="w-3 h-3" />
+                  <span>Sample shown: live generation unavailable</span>
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-md bg-surface-obsidian/90 backdrop-blur border border-cine-border text-[10px] font-bold text-cine-amber flex items-center gap-1 shadow-md">
+                  <span>Image with camera motion</span>
+                </span>
+              )}
             </div>
           </div>
         ) : shot.status === 'rendering' || shot.status === 'queued' ? (
           <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-surface-obsidian/90 relative">
             <img 
-              src={asset.posterUrl || asset.svgFallback} 
+              src={displayImageSrc} 
               alt="Rendering frame"
               className="absolute inset-0 w-full h-full object-cover opacity-20 filter blur-sm" 
               style={{ objectFit: 'cover' }}
@@ -200,8 +229,8 @@ export const ShotCard: React.FC<ShotCardProps> = ({
         ) : shot.status === 'failed' ? (
           <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-surface-obsidian text-center space-y-2">
             <AlertCircle className="w-8 h-8 text-cine-rose" />
-            <p className="text-xs font-bold text-cine-rose">Render Simulation Failed</p>
-            <p className="text-[11px] text-text-muted">{shot.errorMessage || '10% stress test simulated error.'}</p>
+            <p className="text-xs font-bold text-cine-rose">Generation Failed</p>
+            <p className="text-[11px] text-text-muted">{shot.errorMessage || 'Please click Retry.'}</p>
             <button
               type="button"
               onClick={() => onRegenerateShot(shot.id)}
@@ -213,7 +242,7 @@ export const ShotCard: React.FC<ShotCardProps> = ({
         ) : (
           <div className="w-full h-full relative">
             <img
-              src={asset.posterUrl || asset.svgFallback}
+              src={displayImageSrc}
               alt={shot.shotType}
               className="w-full h-full object-cover"
               style={{ objectFit: 'cover' }}
@@ -221,14 +250,20 @@ export const ShotCard: React.FC<ShotCardProps> = ({
             <div className="absolute inset-0 bg-gradient-to-t from-surface-obsidian via-transparent to-transparent opacity-80" />
             <div className="absolute bottom-3 left-3 right-3 text-center">
               <span className="text-xs text-text-muted bg-surface-obsidian/80 px-2.5 py-1 rounded-md border border-cine-border">
-                Click Regenerate or Run Batch
+                Click Generate Sequence
               </span>
             </div>
           </div>
         )}
 
-        {/* Camera & Duration Overlay Badges */}
-        <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+        {/* Camera, Seed & Duration Overlay Badges */}
+        <div className="absolute bottom-2 right-2 flex items-center gap-1.5 pointer-events-none">
+          {shot.seed !== undefined && (
+            <div className="flex items-center gap-0.5 bg-surface-obsidian/85 backdrop-blur-md px-1.5 py-0.5 rounded border border-cine-border text-[9px] text-text-muted font-mono">
+              <Hash className="w-2.5 h-2.5 text-cine-amber" />
+              <span>{shot.seed}</span>
+            </div>
+          )}
           <div className="flex items-center gap-1 bg-surface-obsidian/85 backdrop-blur-md px-2 py-0.5 rounded border border-cine-border text-[10px] text-cine-amber font-mono">
             <Camera className="w-3 h-3" />
             <span>{shot.cameraMotion.replace('_', ' ').toUpperCase()}</span>
@@ -333,7 +368,7 @@ export const ShotCard: React.FC<ShotCardProps> = ({
             </div>
           </div>
 
-          {/* Regenerate Single Shot Button (Rotates asset variation) */}
+          {/* Regenerate Single Shot Button */}
           <div className="pt-1">
             <button
               type="button"
@@ -344,21 +379,6 @@ export const ShotCard: React.FC<ShotCardProps> = ({
               <RotateCw className={`w-3.5 h-3.5 text-cine-amber ${shot.status === 'rendering' ? 'animate-spin' : ''}`} />
               <span>{shot.status === 'done' ? 'Regenerate Shot' : 'Generate Shot'}</span>
             </button>
-          </div>
-
-          {/* Source Attribution Note */}
-          <div className="flex items-center justify-between text-[10px] text-text-muted/70 pt-1">
-            <span className="truncate max-w-[170px]" title={asset.title}>
-              Look: {expectedGenre} • {asset.title}
-            </span>
-            <a
-              href={asset.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-0.5 hover:text-cine-amber underline"
-            >
-              Mixkit <ExternalLink className="w-2.5 h-2.5" />
-            </a>
           </div>
         </div>
       </div>

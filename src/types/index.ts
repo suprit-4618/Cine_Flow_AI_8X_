@@ -14,7 +14,7 @@ export type GenreCategory =
 
 export type GenerationStatus = 'idle' | 'queued' | 'rendering' | 'done' | 'failed';
 
-export type StageText = 'Queued' | 'Rendering' | 'Finishing' | 'Completed' | 'Error';
+export type StageText = 'Queued' | 'Waiting for your turn' | 'Rendering' | 'Finishing' | 'Completed' | 'Error';
 
 export interface ModelPreset {
   id: string;
@@ -75,6 +75,10 @@ export interface SingleGeneration {
   status: GenerationStatus;
   progress: number; // 0 to 100
   stageText: StageText;
+  imageUrl?: string;
+  seed?: number;
+  isFallback?: boolean;
+  fallbackReason?: string;
   resultAssetId?: string;
   errorMessage?: string;
   createdAt: string; // ISO UTC
@@ -91,6 +95,10 @@ export interface StoryboardShot {
   status: GenerationStatus;
   progress: number;
   stageText?: StageText;
+  imageUrl?: string;
+  seed?: number;
+  isFallback?: boolean;
+  fallbackReason?: string;
   resultAssetId?: string;
   locked?: boolean;
   errorMessage?: string;
@@ -103,6 +111,7 @@ export interface Storyboard {
   genre: GenreCategory;
   stylePresetId: string;
   aspectRatio: AspectRatio;
+  seed?: number;
   shots: StoryboardShot[];
   status: GenerationStatus;
   createdAt: string;

@@ -156,19 +156,19 @@ export const HistoryPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight">
-              History
+              My Creations Vault
             </h1>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-surface-raised text-text-muted border border-cine-border">
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-surface-raised text-cine-amber border border-cine-border">
               {totalCount} Items
             </span>
           </div>
           <p className="text-sm text-text-muted mt-1">
-            Saved library of single video shots and 3-shot storyboards.
+            Local persistent library of generated shots, multi-angle storyboards, and favorites.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <PrototypeBadge variant="subtle" />
+          <PrototypeBadge />
         </div>
       </div>
 
@@ -314,15 +314,15 @@ export const HistoryPage: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-2 max-w-md">
-              <h2 className="text-lg font-bold text-text-primary">Your History is Empty</h2>
+              <h2 className="text-lg font-bold text-text-primary">Your Creations Vault is Empty</h2>
               <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
-                Generate a video in the Studio or plan a 3-shot sequence in Storyboard.
+                Generate your first cinematic video shot in the Studio or direct a 3-shot synchronized sequence in Storyboard.
               </p>
               <div className="flex items-center justify-center gap-3 pt-3">
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-transform hover:scale-105"
+                  className="px-4 py-2.5 rounded-xl bg-cine-amber hover:bg-cine-amber-hover text-surface-obsidian text-xs font-bold flex items-center gap-1.5 shadow-amber-sm transition-transform hover:scale-105"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Create in Studio</span>
@@ -332,7 +332,7 @@ export const HistoryPage: React.FC = () => {
                   onClick={() => navigate('/storyboard')}
                   className="px-4 py-2.5 rounded-xl bg-surface-raised hover:bg-surface-hover border border-cine-border text-text-primary text-xs font-bold flex items-center gap-1.5 transition-colors"
                 >
-                  <Layers className="w-4 h-4 text-accent" />
+                  <Layers className="w-4 h-4 text-cine-amber" />
                   <span>Build Storyboard</span>
                 </button>
               </div>

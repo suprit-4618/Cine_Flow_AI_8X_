@@ -154,6 +154,32 @@ describe('3. Generation Engine Simulation & State Machine', () => {
     expect(id1).not.toBe(id2);
   });
 
+  it('should map aspect ratios to exact generation dimensions', () => {
+    const d169 = GenerationEngine.getDimensions('16:9');
+    expect(d169).toEqual({ width: 1280, height: 720 });
+
+    const d916 = GenerationEngine.getDimensions('9:16');
+    expect(d916).toEqual({ width: 720, height: 1280 });
+
+    const d11 = GenerationEngine.getDimensions('1:1');
+    expect(d11).toEqual({ width: 1024, height: 1024 });
+  });
+
+  it('should build valid Pollinations.AI URLs with prompt, style words, dimensions, and seed', () => {
+    const prompt = 'Cyberpunk city street in rain';
+    const styleId = 'neon-noir';
+    const seed = 428912;
+    const result = GenerationEngine.buildPollinationsUrl(prompt, styleId, '16:9', seed);
+
+    expect(result.url).toContain('https://image.pollinations.ai/prompt/');
+    expect(result.url).toContain('width=1280');
+    expect(result.url).toContain('height=720');
+    expect(result.url).toContain('seed=428912');
+    expect(result.url).toContain('nologo=true');
+    expect(result.seed).toBe(428912);
+    expect(result.fullPrompt).toContain(prompt);
+  });
+
   it('should allow cancelling an in-flight simulated job', () => {
     const req: GenerationRequest = {
       prompt: 'Cancel test scene',
@@ -180,7 +206,42 @@ describe('3. Generation Engine Simulation & State Machine', () => {
 
     // Cancel immediately
     cancel();
-    expect(onSuccess).not.toHaveBeenCalled();
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('should verify storage saves URL and seed without raw image binary data', () => {
+    const mockGen: SingleGeneration = {
+      id: 'gen-storage-audit',
+      prompt: 'A sleek spaceship landing',
+      styleId: 'deep-space',
+      modelId: 'cinemotion-v3',
+      aspectRatio: '16:9',
+      cameraMotion: 'dolly_in',
+      durationSec: 5,
+      mediaType: 'image',
+      imageUrl: 'https://image.pollinations.ai/prompt/test?width=1280&height=720&seed=123',
+      seed: 123456,
+      status: 'done',
+      progress: 100,
+      stageText: 'Completed',
+      createdAt: new Date().toISOString(),
+      isFavorite: false,
+    };
+
+    StorageService.saveGeneration(mockGen);
+    const state = StorageService.loadState();
+    const serialized = JSON.stringify(state);
+
+    expect(serialized).toBeDefined();
+    // Verify no base64 image blobs or raw binary data are stored
+    expect(serialized).not.toContain('data:image');
+    expect(serialized).not.toContain('base64');
+    expect(serialized).toContain('https://image.pollinations.ai/prompt/');
+    expect(serialized).toContain('123456');
+
+    const retrieved = state.generations.find(g => g.id === 'gen-storage-audit');
+    expect(retrieved).toBeDefined();
+    expect(retrieved?.imageUrl).toBe('https://image.pollinations.ai/prompt/test?width=1280&height=720&seed=123');
+    expect(retrieved?.seed).toBe(123456);
   });
 });

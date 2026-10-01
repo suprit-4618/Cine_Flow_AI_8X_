@@ -20,7 +20,7 @@ export const ActiveJobsFeed: React.FC<ActiveJobsFeedProps> = ({ jobs }) => {
           <span className="w-2 h-2 rounded-full bg-cine-amber animate-ping" />
           <span>Render Pipeline Active ({jobs.length})</span>
         </h3>
-        <span className="text-xs text-text-dim">Simulated GPU queue</span>
+        <span className="text-xs text-text-dim">Rate-limited queue</span>
       </div>
 
       <div className="space-y-2.5">
@@ -99,7 +99,7 @@ export const ActiveJobsFeed: React.FC<ActiveJobsFeedProps> = ({ jobs }) => {
               {isError ? (
                 <div className="mt-3 flex items-center gap-2 text-xs text-status-danger">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span>{gen.errorMessage || 'Simulated GPU error occurred.'}</span>
+                  <span>{gen.errorMessage || 'Live generation request error occurred.'}</span>
                 </div>
               ) : (
                 <div className="mt-3 space-y-1.5">
@@ -111,7 +111,7 @@ export const ActiveJobsFeed: React.FC<ActiveJobsFeedProps> = ({ jobs }) => {
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-text-dim font-mono">
                     <span>
-                      {gen.status === 'queued' ? 'Awaiting GPU allocation...' : 'Synthesizing neural latent frames...'}
+                      {gen.status === 'queued' ? 'Awaiting turn in queue...' : 'Synthesizing live image...'}
                     </span>
                     <span>{gen.progress}%</span>
                   </div>

@@ -58,7 +58,15 @@ All 12 video clips are sourced from Mixkit and verified for sequence coherence a
 
 ---
 
-## 4. Third-Party Libraries & Fonts
+## 4. Third-Party Services & APIs
+* **Live Image Generation:** [Pollinations.AI](https://pollinations.ai/) (Free AI Image Generation Service)
+  - Endpoint: `https://image.pollinations.ai/prompt/{prompt}?width={w}&height={h}&seed={seed}&nologo=true`
+  - Generates live cinematic stills according to prompt keywords, style words, aspect ratio dimensions, and seed values.
+  - Used with rate-limiting client queue and automatic graceful sample fallbacks.
+
+---
+
+## 5. Third-Party Libraries & Fonts
 * **Icons:** [Lucide Icons](https://lucide.dev/) (ISC License)
 * **Build System & Framework:** [Vite](https://vitejs.dev/) (MIT License), [React](https://react.dev/) (MIT License), [Tailwind CSS](https://tailwindcss.com/) (MIT License)
 * **Typography:** Native System Font Stack (`system-ui, -apple-system, sans-serif`) — zero external web fonts or CDN requests.

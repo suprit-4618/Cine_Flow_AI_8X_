@@ -13,12 +13,12 @@ CineFlow AI is a high-fidelity front-end prototype designed for rapid evaluation
 | Feature / Subsystem | Real Implementation | Simulated Aspect | Rationale |
 | :--- | :--- | :--- | :--- |
 | **Studio & Storyboard UI** | **100% Real Code** (React 18 + TS + Tailwind) | None | Full responsive layout, state management, and interaction design. |
-| **Camera Motion Choreography** | **100% Real CSS 2D Transforms & Viewfinder** | 3D WebGL Camera | Lightweight 2D keyframe simulations avoid multi-megabyte 3D engine overhead. |
+| **AI Image Generation** | **Real Live Generation** (via free third-party Pollinations.AI service) | Rate limits & queue spacing | Live AI generation based on user prompt, style words, aspect ratio, and seed with client-side rate-limit queue. |
+| **Camera Motion Choreography** | **100% Real Client-Side CSS Motion** | 3D WebGL / GPU Video encoding | Looping 2D CSS transforms simulate camera motion (pan, tilt, orbit, dolly, zoom, handheld) over stills, honoring `prefers-reduced-motion`. |
+| **Sample Video Clips** | **12 Royalty-Free HD Mixkit Clips + Posters** | Real-time AI Video Generation | Provides instant reference visuals and graceful fallback if live image generation is unavailable or times out. |
 | **Media Playback & Auto-Advance** | **100% Real HTML5 Video & Master Player** | None | Continuous multi-shot reel playback with duration trimming and progress markers. |
-| **AI Video & Image Diffusion** | **Deterministic Keyword & Genre Matcher** | Cloud GPU Diffusion Backend | Eliminates external API latency, model cold starts, rate limits, and billing friction. |
-| **Generation Queue & Lifecycle** | **Real State Machine & Timers** (`idle` $\to$ `queued` $\to$ `rendering` $\to$ `done` / `failed`) | GPU Render Progress | Simulates real compute stages, 1st-try success guarantee, and 10% retry recovery. |
-| **Storage & Creations Vault** | **100% Real Versioned `localStorage`** | Remote Cloud Database | Full offline privacy, search, filter, favoriting, and in-memory fallback. |
-| **Asset Delivery & Posters** | **12 Real 720p HD MP4 Clips + WebP Posters** | Real-time AI Generation | Uses verified royalty-free clips from Mixkit with zero placeholder images. |
+| **Generation Queue & Lifecycle** | **Real Sequential Rate-Limited Queue** (`Queued` $\to$ `Waiting for your turn` $\to$ `Rendering` $\to$ `Finishing` $\to$ `Done`) | Background workers | Sequential 1-by-1 queue with 45s timeout protection and honest sample fallbacks. |
+| **Storage & Creations Vault** | **100% Real Versioned `localStorage`** | Remote Cloud Database | Stores prompt, parameters, seed, and image URLs only (zero image data binaries in storage) with poster fallback. |
 
 ---
 
